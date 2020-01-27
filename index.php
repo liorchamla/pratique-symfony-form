@@ -1,9 +1,19 @@
 <?php
 
 /**
- * PREMIERE PARTIE : UTILISATION DU COMPOSANT SYMFONY/FORM
+ * DEUXIEME PARTIE : EXPLOITER LE COMPOSER SYMFONY/VALIDATOR AVEC LE COMPOSANT SYMFONY/FORM
  * -----------------------
  * Après avoir installé le composant (composer require symfony/form) nous bénéficions de ses fonctionnalités
+ * 
+ * Désormais, nous connaissons les bases concernant le composant symfony/form et nous avions vu qu'il ne s'occupait pas de
+ * validation en lui-même, mais qu'il préférait donner cette tâche à une librairie faite dans ce but.
+ * 
+ * Nous allons donc voir comment exploiter le composant symfony/validator (composer require symfony/validator) avec
+ * le composant symfony/form.
+ * 
+ * ATTENTION :
+ * -------------
+ * Des changements très importants vont avoir dans le fichier configuration.php où nous créons un FormFactory
  * 
  * Les points problématiques soulevés dans le cours initial (en PHP NATIF) ne sont pas tous réglés par le composant :
  * - L'extraction des données à partir du POST est fastidieuse et demande une attention particulière ✅
@@ -20,6 +30,8 @@
 
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Form;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Validation;
 
 require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . '/RegistrationType.php';
@@ -70,21 +82,6 @@ $builder->add('agreeTerms', CheckboxType::class);
 
 /** @var Form */
 $form = $builder->getForm();
-// Remplace l'ancien :
-// $form = $builder
-//     ->add('firstName', TextType::class)
-//     ->add('lastName', TextType::class)
-//     ->add('email', EmailType::class)
-//     ->add('phone', TextType::class)
-//     ->add('position', ChoiceType::class, [
-//         'placeholder' => 'Choisissez un poste',
-//         'choices' => [
-//             'Développeur' => 'developer',
-//             'Testeur' => 'tester'
-//         ]
-//     ])
-//     ->add('agreeTerms', CheckboxType::class)
-//     ->getForm();
 
 /**
  * TRAITEMENT DE LA REQUETE 
@@ -109,13 +106,9 @@ $form->handleRequest();
  * Si le formulaire a été soumis, il faut alors extraire les données envoyées, les valider et ensuite faire le traitement voulu
  */
 if ($form->isSubmitted()) {
-    // Remplace l'ancien :
-    // $isSubmitted = !empty($_POST);
-    // if ($isSubmitted) {
-
-    // Exemple de validation
-    $isValid = true;
-    $errors = [];
+    // Exemple de validation (remplacé ci-dessous)
+    // $isValid = true;
+    // $errors = [];
 
     /**
      * EXTRACTION DES CHAMPS SOUMIS :
@@ -133,55 +126,126 @@ if ($form->isSubmitted()) {
      * le reste de l'algorithme de validation ainsi que l'affichage du formulaire HTML.
      */
     $data = $form->getData();
-    // Remplace l'ancien :
-    // $firstName = $_POST['firstName'] ? trim($_POST['firstName']) : false;
-    // $lastName = $_POST['lastName'] ? trim($_POST['lastName']) : false;
-    // $email = $_POST['email'] ? trim($_POST['email']) : false;
-    // $phone = $_POST['phone'] ? trim($_POST['phone']) : false;
-    // $position = $_POST['position'] ?? false;
-    // $agreeTerms = $_POST['agreeTerms'] ?? false;
 
-    // Début de la validation
-    if (!$data['firstName']) {
-        $isValid = false;
-        $errors['firstName'] = 'Le prénom est obligatoire';
+    /**
+     * MISE EN PLACE DE LA VALIDATION DES DONNEES GRACE AU COMPOSANT SYMFONY/VALIDATOR
+     * -----------------
+     * Le composant de validation de symfony (composer require symfony/validation) est livré avec deux parties essentielles :
+     * 1) Des règles de validation représentées sous forme de différentes classes qui décrivent des contraintes 
+     * 2) Un validateur qui va analyser des données au regard de ces règles et voir si tout colle
+     * 
+     * Le validateur permet 3 types de validations :
+     * 1) La validation d'une SIMPLE valeur au regard d'une ou plusieurs règles
+     * 2) La validation d'un tableau entier au regard d'une ou plusieurs règles
+     * 3) La validation d'un objet (nécessite un fichier de configuraiton YAML (donc le composant symfony/yaml) ou des annotations (donc les librairies doctrine/annotations et doctrine/cache)
+     * 
+     * Ici, nous souhaitons valider le tableau $data (extrait de la requête HTTP par le formulaire) avec certaines règles simples.
+     * 
+     * Commençons par définir les règles (notez que le namespace Assert a été importé en tant qu'alias en haut de ce fichier):
+     */
+
+    $validationConstraints = new Assert\Collection([ // Nous avons une collection de règles
+        'firstName' => [
+            new Assert\NotBlank(['message' => 'Le prénom est obligatoire']),
+            new Assert\Length(['min' => 3, 'minMessage' => 'Le prénom doit contenir au moins 3 caractères'])
+        ],
+        'lastName' => [
+            new Assert\NotBlank(['message' => 'Le nom de famille est obligatoire']),
+            new Assert\Length(['min' => 3, 'minMessage' => 'Le nom de famille doit contenir au moins 3 caractères'])
+        ],
+        'email' => [
+            new Assert\NotBlank(['message' => 'L\'adresse email est obligatoire']),
+            new Assert\Email(['message' => 'L\'adresse email n\'est pas au format valide'])
+        ],
+        'phone' => new Assert\NotBlank(['message' => 'Le numéro de téléphone est obligatoire']),
+        'position' => [
+            new Assert\NotBlank(['message' => 'Vous devez choisir une position']),
+            new Assert\Regex(['pattern' => '/^developer|tester$/', 'message' => 'Le poste choisi n\'existe pas'])
+        ]
+    ]);
+
+    // Ce champ est placé en supplément car il ne sera pas utilisé dans le formulaire d'édition
+    $validationConstraints->fields['agreeTerms'] = new Assert\Required([
+        new Assert\NotBlank(['message' => 'Vous n\'avez pas accepté les termes du réglement'])
+    ]);
+
+    /**
+     * CREATION DU VALIDATEUR :
+     * ------------------
+     * Pour pouvoir vérifier si le tableau $data se conforme aux règles que l'on a mis en place, on dispose d'un objet
+     * $validator qui va faire ces vérifications puis nous livrer une liste des éventuelles erreurs.
+     * 
+     * Créons ce $validator et lançons le cycle de validation 
+     */
+
+    $validator = Validation::createValidator();
+
+    /**
+     * VALIDATION DU TABLEAU PAR RAPPORT AUX REGLES :
+     * ----------------
+     * En utilisatn la méthode $validator->validate($data, $validationConstraints) on demande au validator de vérifier
+     * chacune des données du tableau $data par rapport aux contraintes qui correspondent.
+     * 
+     * La méthode nous répond un objet de la classe ConstraintViolationList qui est bien pratique pour repérer, exploiter, compter
+     * les erreurs de validation qui ont eu lieu.
+     * 
+     * Ce tableau contient des objets de la classe ConstraintViolation qui représentent chacun une violation de règle. On peut donc
+     * le transformer en un tableau plat qui ressemblera plus à ce qu'on avait auparavant
+     */
+    $violations = $validator->validate($data, $validationConstraints);
+    $isValid = $violations->count() === 0;
+
+    $errors = [];
+
+    foreach ($violations as $violation) {
+        // Par défaut, le propertyPath sera "[firstName]" par exemple, on veut donc supprimer les crochets autour
+        $fieldName = str_replace(['[', ']'], '', $violation->getPropertyPath());
+        $message = $violation->getMessage();
+
+        $errors[$fieldName] = $message;
     }
-    if ($data['firstName'] && mb_strlen($data['firstName']) < 3) {
-        $isValid = false;
-        $errors['firstName'] = 'Le prénom doit avoir au moins 3 caractères';
-    }
-    if (!$data['lastName']) {
-        $isValid = false;
-        $errors['lastName'] = 'Le nom de famille est obligatoire';
-    }
-    if ($data['lastName'] && mb_strlen($data['lastName']) < 3) {
-        $isValid = false;
-        $errors['lastName'] = 'Le nom de famille doit avoir au moins 3 caractères';
-    }
-    if (!$data['email']) {
-        $isValid = false;
-        $errors['email'] = 'L\'email est obligatoire !';
-    }
-    if ($data['email'] && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-        $isValid = false;
-        $errors['email'] = 'L\'email n\'est pas au format valide !';
-    }
-    if (!$data['phone']) {
-        $isValid = false;
-        $errors['phone'] = 'Le téléphone est obligatoire !';
-    }
-    if (!$data['position']) {
-        $isValid = false;
-        $errors['position'] = 'La position souhaitée est obligatoire !';
-    }
-    if ($data['position'] && !in_array($data['position'], ['developer', 'tester'])) {
-        $isValid = false;
-        $errors['position'] = 'La position que vous avez choisi n\'est pas valide !';
-    }
-    if (!$data['agreeTerms']) {
-        $isValid = false;
-        $errors['agreeTerms'] = 'Vous n\'avez pas accepté les termes du réglement !';
-    }
+
+    // Remplace l'ancien :
+    // if (!$data['firstName']) {
+    //     $isValid = false;
+    //     $errors['firstName'] = 'Le prénom est obligatoire';
+    // }
+    // if ($data['firstName'] && mb_strlen($data['firstName']) < 3) {
+    //     $isValid = false;
+    //     $errors['firstName'] = 'Le prénom doit avoir au moins 3 caractères';
+    // }
+    // if (!$data['lastName']) {
+    //     $isValid = false;
+    //     $errors['lastName'] = 'Le nom de famille est obligatoire';
+    // }
+    // if ($data['lastName'] && mb_strlen($data['lastName']) < 3) {
+    //     $isValid = false;
+    //     $errors['lastName'] = 'Le nom de famille doit avoir au moins 3 caractères';
+    // }
+    // if (!$data['email']) {
+    //     $isValid = false;
+    //     $errors['email'] = 'L\'email est obligatoire !';
+    // }
+    // if ($data['email'] && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+    //     $isValid = false;
+    //     $errors['email'] = 'L\'email n\'est pas au format valide !';
+    // }
+    // if (!$data['phone']) {
+    //     $isValid = false;
+    //     $errors['phone'] = 'Le téléphone est obligatoire !';
+    // }
+    // if (!$data['position']) {
+    //     $isValid = false;
+    //     $errors['position'] = 'La position souhaitée est obligatoire !';
+    // }
+    // if ($data['position'] && !in_array($data['position'], ['developer', 'tester'])) {
+    //     $isValid = false;
+    //     $errors['position'] = 'La position que vous avez choisi n\'est pas valide !';
+    // }
+    // if (!$data['agreeTerms']) {
+    //     $isValid = false;
+    //     $errors['agreeTerms'] = 'Vous n\'avez pas accepté les termes du réglement !';
+    // }
 
     // Si tout va bien, on traite et on affiche le résultat
     if ($isValid) {
