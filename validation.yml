@@ -1,0 +1,26 @@
+# Dans ce fichier nous mettons en place la configuration du validator classe par classe
+# Ici nous n'avons qu'une classe à valider à savoir RegistrationData
+# Dans d'autres projets on pourrait faire ça pour tout type de classes en mettant le nom complet (App\Data\RegistrationData par exemple)
+# Ce n'est qu'une reprise au format YAML des contraintes qu'on avait écrite en PHP
+RegistrationData:
+  properties:
+    firstName:
+      - NotBlank:
+          message: Le prénom est obligatoire !
+      - Length:
+          min: 3
+          minMessage: Le prénom doit contenir au moins 3 caractères
+    lastName:
+      - NotBlank:
+          message: Le nom de famille est obligatoire !
+      - Length:
+          min: 3
+          minMessage: Le nom de famille doit contenir au moins 3 caractères
+    email:
+      - NotBlank:
+          message: L'adresse email est obligatoire !
+      - Email:
+          message: L'adresse email doit être au format valide !
+    phone:
+      - NotBlank:
+          message: Le téléphone est obligatoire !

@@ -1,31 +1,30 @@
 <?php
 
 /**
- * DEUXIEME PARTIE : EXPLOITER LE COMPOSER SYMFONY/VALIDATOR AVEC LE COMPOSANT SYMFONY/FORM
+ * TROISIEME PARTIE : EXPLOITER LA PUISSANCE DES DTO (MODELS) ET DU VALIDATOR A LA FOIS
  * -----------------------
- * Après avoir installé le composant (composer require symfony/form) nous bénéficions de ses fonctionnalités
+ * Dans la dernière section, on a vu comment mettre en place la validation via le composant symfony/validator
+ * On a aussi vu qu'on pouvait demander au formulaire de représenter ses données via un objet d'une classe que l'on spécifie
+ * dans l'option data_class.
  * 
- * Désormais, nous connaissons les bases concernant le composant symfony/form et nous avions vu qu'il ne s'occupait pas de
- * validation en lui-même, mais qu'il préférait donner cette tâche à une librairie faite dans ce but.
+ * Et si nous pouvions réunir les deux notions en une seule ?
  * 
- * Nous allons donc voir comment exploiter le composant symfony/validator (composer require symfony/validator) avec
- * le composant symfony/form.
+ * EXTRAIRE LES CONTRAINTES DE VALIDATION DANS UN FICHIER DE CONFIGURATION
+ * -----------------------
+ * Ce que l'on va pouvoir faire, c'est séparer les deux responsabilités : Pour l'instant, le poids de la validation pèse sur 
+ * notre formulaire via la classe RegistrationType qui construit le formulaire. Ce que nous pouvons faire c'est :
+ * - Ne plus s'occuper de la validation lors de la construction du formulaire mais uniquement lors de la soumission
+ * - Extraire les contraintes de validation dans un fichier de configuration plus simple à écrire / maintenir
  * 
- * ATTENTION :
- * -------------
- * Des changements très importants vont avoir dans le fichier configuration.php où nous créons un FormFactory
+ * PASSER PAR LE COMPOSANT SYMFONY/YAML
+ * ------------------
+ * Pour pouvoir décrire la validation via un fichier de configuration YAML, on devra installer le composant symfony/yaml (composer
+ * require symfony/yaml) afin que le composant de validation puisse lire ces fichiers !
  * 
- * Les points problématiques soulevés dans le cours initial (en PHP NATIF) ne sont pas tous réglés par le composant :
- * - L'extraction des données à partir du POST est fastidieuse et demande une attention particulière ✅
- * => Ce problème peut être réglé plus simplement avec le composant 
- * - La réutilisation de ce code est complexe ✅
- * => Ce problème peut être réglé plus simplement avec le composant
- * - La testabilité est nulle (ou pratiquement impossible) ✅
- * => Ce problème peut être réglé plus simplement avec le composant
- * - La validation est très compliquée et fastidieuse aussi ❌
- * => Le composant ne prend pas en compte la validation MAIS peut faire appel à une librairie de validation tierce
- * - Le formulaire n'est pas sécurisé contre les attaques CSRF (on peut tout à fait l'appeler à partir d'une autre source que le site lui-même) ❌
- * => Le composant ne prend pas en comptre la sécurité CSRF MAIS peut faire appel à une librairie tierce !
+ * Pour vraiment comprendre comment cela se passe il vous faudra examiner les fichiers suivants :
+ * - configuration.php => On y met en place la configuration nécessaire pour le validateur
+ * - validation.yml => La configuration de validation
+ * - RegistrationType.php => On a supprimé toute la logique de validation (contraintes) du FormBuilder
  */
 
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -74,6 +73,9 @@ $builder = $formFactory->createBuilder(RegistrationType::class, $data, [
 
 $builder->add('agreeTerms', CheckboxType::class, [
     'constraints' => [
+        // C'est la seule validation qu'on ajoute à la main car elle n'est pas utile lors du edit.php
+        // On l'ajoute donc ici lors de l'ajout du champ, le reste des validations est décrit dans le fichier
+        // validation.yml
         new Assert\NotBlank(['message' => 'Vous n\'avez pas accepté les termes du réglement'])
     ]
 ]);

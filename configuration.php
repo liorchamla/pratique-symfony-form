@@ -46,9 +46,18 @@ require_once __DIR__ . '/vendor/autoload.php';
  * Il existe aussi une méthode Validation::createValidatorBuilder() qui nous permet de configurer le validateur, et c'est
  * notamment grâce à ça qu'on pourra configurer un validateur pour se servir d'un fichier de configuration YAML ou encore
  * d'annotations qui se trouvent sur une classe donnée, etc.
+ * 
+ * LECTURE DE FICHIERS DE CONFIGURATION YAML :
+ * ----------
+ * Nous pouvons donc utiliser la méthode Validation::createValidatorBuilder() pour configurer notre propre validateur avec
+ * des détails tels que par exemple ... le fait de devoir lire des fichiers de configuration YAML !
  */
+$validator = Validation::createValidatorBuilder()
+    ->addYamlMapping('validation.yml')
+    ->getValidator();
 
-$validator = Validation::createValidator();
+// Remplace l'ancien :
+// $validator = Validation::createValidator();
 
 /**
  * MISE EN PLACE DE LA SECURITE PAR CSRF :
