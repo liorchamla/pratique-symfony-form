@@ -7,8 +7,6 @@
  */
 
 use Symfony\Component\Form\Form;
-use Symfony\Component\Validator\Validation;
-use Symfony\Component\Validator\Constraints as Assert;
 
 require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . '/RegistrationType.php';
@@ -35,7 +33,11 @@ require __DIR__ . '/configuration.php';
  * -----------------
  * Voir le fichier index.php pour plus de détails sur ce point
  */
-$builder = $formFactory->createBuilder(RegistrationType::class);
+$builder = $formFactory->createBuilder(RegistrationType::class, null, [
+    'csrf_token_id' => 'registration',
+    'csrf_field_name' => 'csrf_token',
+    'csrf_message' => 'Vous n\'avez pas respecté la politique de sécurité CSRF pour ce formulaire !'
+]);
 
 /** 
  * CONSTRUIRE UN FORMULAIRE AVEC LE FORMBUILDER :

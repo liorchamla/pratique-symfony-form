@@ -55,8 +55,26 @@ require __DIR__ . '/configuration.php';
  * formulaire !
  * 
  * Enfin, on peut pré-configurer un builder de sorte qu'il se servie d'une classe FormType déjà existante (voir le fichier RegistrationType pour plus d'informations)
+ * 
+ * CONCERNANT LA PROTECTION CSRF :
+ * ------------------
+ * 
+ * Afin que chaque formulaire sache bien comment gérer cette protection, il faudra donner au FormBuilder un certain nombre
+ * d'informations essentielles :
+ * 1) L'identifiant du token que l'on souhaite utiliser (cela peut-être n'importe quoi)
+ * 2) Le nom du champ du formulaire qui contiendra le token et qui sera validé lors de la soumission
+ * 3) Le message d'erreur à afficher dans le cas où le token n'est pas fourni ou qu'il ne correspond pas
+ * 
+ * Dans le formulaire HTML, il faudra donc avoir un champ qui contienne le token généré avec le même identifiant que celui
+ * utilisé par le formulaire
  */
-$builder = $formFactory->createBuilder(RegistrationType::class);
+$builder = $formFactory->createBuilder(RegistrationType::class, null, [
+    // Par défaut, l'identifiant du token est le même que le nom du formulaire (ici "registration")
+    // On peut bien sur le modifier via l'option "csrf_token_id"
+    // 'csrf_token_id' => 'registration',
+    'csrf_field_name' => 'csrf_token',
+    'csrf_message' => 'Vous n\'avez pas respecté la politique de sécurité CSRF pour ce formulaire !'
+]);
 
 /** 
  * CONSTRUIRE UN FORMULAIRE AVEC LE FORMBUILDER :

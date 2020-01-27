@@ -93,7 +93,9 @@
         <?php if ($builder->has('agreeTerms')) : ?>
             <label <?php if (isset($errors['agreeTerms'])) : ?> class="is-invalid" <?php endif ?>><input type="checkbox" name="registration[agreeTerms]" id="agreeTerms"> J'accèpte les termes du réglement du service</label>
         <?php endif ?>
+
         <button type="submit">Je m'inscris</button>
+        <input type="text" name="registration[csrf_token]" value="<?= $csrfManager->getToken('registration') ?>" />
     </form>
 </body>
 

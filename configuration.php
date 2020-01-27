@@ -1,7 +1,11 @@
 <?php
 
+use Symfony\Component\Form\Extension\Csrf\CsrfExtension;
 use Symfony\Component\Form\Extension\Validator\ValidatorExtension;
 use Symfony\Component\Form\Forms;
+use Symfony\Component\Security\Csrf\CsrfTokenManager;
+use Symfony\Component\Security\Csrf\TokenGenerator\UriSafeTokenGenerator;
+use Symfony\Component\Security\Csrf\TokenStorage\NativeSessionTokenStorage;
 use Symfony\Component\Validator\Validation;
 
 require_once __DIR__ . '/vendor/autoload.php';
@@ -47,14 +51,64 @@ require_once __DIR__ . '/vendor/autoload.php';
 $validator = Validation::createValidator();
 
 /**
+ * MISE EN PLACE DE LA SECURITE PAR CSRF :
+ * ----------------
+ * Dans la plupart des cas, vous ne souhaitez pas qu'une formulaire puisse être soumis par l'extérieur de votre propre site.
+ * 
+ * Or pour l'instant, rien n'empêche quelqu'un d'envoyer une simple requête HTTP en POST vers le fichier index.php ou edit.php
+ * afin de soumettre des données. Ce qui ouvre une brêche de sécurité assez inquiétante (sauf bien sur si c'est ce que vous 
+ * aviez prévu dès le départ, comme dans le cas d'une API ouverte ou ce genre de choses).
+ * 
+ * Il est donc possible d'utiliser le composant symfony/security-csrf (composer require symfony/security-csrf) afin d'en doter
+ * nos formulaires.
+ * 
+ * Une fois le composant installé, on peut désormais mettre en place cette politique de sécurisation sur notre FormFactory
+ * afin que nos formulaires bénéficient désormais de cette protection !
+ * 
+ * LES OBJETS DE BASE (ET LA SESSION) :
+ * ------------------
+ * La politique de protection CSRF consiste à stoquer un jeton dans la session lors de la génération du formulaire
+ * puis à vérifier que ce jeton est bien présent et valide lors de la réception du formulaire.
+ * 
+ * Pour ce faire, on a besoin :
+ * 1) D'une brique qui se charge de générer des chaines aléatoire (le UriSafeTokenGenerator). C'est
+ * un objet qui implémente l'interface TokenGeneratorInterface (donc vous pourriez créer le votre ;))
+ * 2) D'une brique qui se charge de manipuler la session : si vous n'utilisez pas HttpFoundation, ce sera le NativeSessionTokenStorage
+ * mais si vous utilisez HttpFoundation, vous pourriez utiliser le SessionTokenStorage, dans tous les cas, un objet qui 
+ * implémente la TokenStorageInterface (là encore, vous pourriez même créer votre propre implémentation)
+ * 3) D'une brique qui se charge de tout mettre en relation et de gérer le tout : le CsrfTokenManager, objet qui implémente
+ * l'interface TokenManagerInterface, ce qui fait que vous pourriez là aussi créer le votre :)
+ */
+session_start();
+
+$csrfGenrator = new UriSafeTokenGenerator();
+$csrfStorage = new NativeSessionTokenStorage();
+$csrfManager = new CsrfTokenManager($csrfGenrator, $csrfStorage);
+
+/**
  * CONFIGURATION DE LA FORMFACTORY
  * --------------
  * Si l'on veut que le validateur soit utilisé avec nos formulaire, il faut que la fabrique de formulaire soit au courant
  * On va donc devoir lui ajouter une extension qui comporte notre validateur
+ * 
+ * Si l'on veut aussi que la FormFactory dote tous nos formulaires de la protection CSRF, alors on pourra aussi charger
+ * l'extension CsrfExtension en lui passant notre CsrfTokenManager !
+ * 
+ * IMPORTANT :
+ * ----------
+ * A partir de ce moment là, tous vos formulaires seront soumis à la protection CSRF, ce qui ne vous empêche pas de la
+ * désactiver au cas par cas si nécessaire, en passant l'option ['csrf_protection' => false] lors de la création d'un
+ * FormBuilder via la FormFactory
+ * 
+ * A SAVOIR AUSSI :
+ * ------------
+ * Afin que chaque formulaire sache bien comment gérer cette protection, il faudra donner au FormBuilder un certain nombre
+ * d'informations essentielles :
+ * 1) L'identifiant du token que l'on souhaite utiliser (cela peut-être n'importe quoi)
+ * 2) Le nom du champ du formulaire qui contiendra le token et qui sera validé lors de la soumission
+ * 3) Le message d'erreur à afficher dans le cas où le token n'est pas fourni ou qu'il ne correspond pas
  */
 $formFactory = Forms::createFormFactoryBuilder()
     ->addExtension(new ValidatorExtension($validator))
+    ->addExtension(new CsrfExtension($csrfManager))
     ->getFormFactory();
-
-// Remplace l'ancien :
-// $formFactory = Forms::createFormFactory();
