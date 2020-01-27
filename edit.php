@@ -32,12 +32,12 @@ $data = [
 // $position = 'developer';
 
 /**
- * CREATION D'UNE FABRIQUE DE FORMULAIRE :
- * ------------
- * Voir le fichier index.php pour plus de détails sur ce point
+ * MISE EN COMMUN DE LA CONFIGURATION DU FACTORY :
+ * ----------------
+ * La fabrique de formulaire (FormFactory) pourrait être utilisé dans d'autres fichiers, on peut donc le mettre
+ * en place à part.
  */
-
-$formFactory = Forms::createFormFactory();
+require __DIR__ . '/configuration.php';
 
 /**
  * RENCONTRE AVEC LE FORMBUILDER :

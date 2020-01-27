@@ -20,20 +20,17 @@
 
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Form;
-use Symfony\Component\Form\Forms;
 
 require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . '/RegistrationType.php';
 
 /**
- * CREATION D'UNE FABRIQUE DE FORMULAIRE :
- * ------------
- * Pour créer et gérer des forlulaires avec le composant symfony/form, il faut créer une fabrique qui nous permettra de les construire.
- * 
- * Les fabriques de formulaire sont des objets qui implémentent l'interface FormFactoryInterface
+ * MISE EN COMMUN DE LA CONFIGURATION DU FACTORY :
+ * ----------------
+ * La fabrique de formulaire (FormFactory) pourrait être utilisé dans d'autres fichiers, on peut donc le mettre
+ * en place à part.
  */
-
-$formFactory = Forms::createFormFactory();
+require __DIR__ . '/configuration.php';
 
 /**
  * RENCONTRE AVEC LE FORMBUILDER :
