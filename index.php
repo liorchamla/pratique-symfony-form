@@ -25,6 +25,19 @@
  * - configuration.php => On y met en place la configuration nécessaire pour le validateur
  * - validation.yml => La configuration de validation
  * - RegistrationType.php => On a supprimé toute la logique de validation (contraintes) du FormBuilder
+ * 
+ * PASSER PAR LES ANNOTATIONS
+ * -----------------
+ * Une autre façon de décharger le formulaire des contraintes de validation qui l'encombrent, c'est aussi de les écrire sous 
+ * forme d'annotations directement au sein de la classe DTO (pour nous RegistrationData).
+ * 
+ * Pour ce faire vous devez installer les package doctrine/annotations et doctrine/cache (composer require doctrine/annotations doctrine/cache)
+ * Une fois fait, vous aurez la possibilité d'utiliser les annotations. 
+ * 
+ * Vous devrez bien sur expliquer au validateur qu'il doit charger ses configurations à partir des annotations.
+ * Pour vraiment comprendre comme cela se passe, examinez les fichiers :
+ * - configuration.php => On y met en place la configuration nécessaire pour le validateur
+ * - RegistrationData.php => On y met en place les contraintes sous forme d'annotations
  */
 
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -75,7 +88,7 @@ $builder->add('agreeTerms', CheckboxType::class, [
     'constraints' => [
         // C'est la seule validation qu'on ajoute à la main car elle n'est pas utile lors du edit.php
         // On l'ajoute donc ici lors de l'ajout du champ, le reste des validations est décrit dans le fichier
-        // validation.yml
+        // validation.yml ou dans nos annotations
         new Assert\NotBlank(['message' => 'Vous n\'avez pas accepté les termes du réglement'])
     ]
 ]);

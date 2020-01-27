@@ -1,5 +1,6 @@
 <?php
 
+use Doctrine\Common\Annotations\AnnotationRegistry;
 use Symfony\Component\Form\Extension\Csrf\CsrfExtension;
 use Symfony\Component\Form\Extension\Validator\ValidatorExtension;
 use Symfony\Component\Form\Forms;
@@ -51,9 +52,29 @@ require_once __DIR__ . '/vendor/autoload.php';
  * ----------
  * Nous pouvons donc utiliser la méthode Validation::createValidatorBuilder() pour configurer notre propre validateur avec
  * des détails tels que par exemple ... le fait de devoir lire des fichiers de configuration YAML !
+ * 
+ * LECTURE DES ANNOTATIONS DANS LES CLASSES :
+ * -----------
+ * Une autre façon d'expliquer les contraintes qui pèsent sur les propriétés d'une classe en plus du fichier YAML, ce sont les
+ * annotations. Pour pouvoir les utiliser, il faudra utiliser Validation::createValidatorBuilder() afin de le configurer et
+ * qu'il soit au courant qu'on veut utiliser les annotations !
+ * 
+ * ATTENTION :
+ * ---------
+ * Utiliser les annotations demande à ce qu'on créé un chargeur (loader) d'annotations. Cet objet nous est procuré par la librarie
+ * doctrine/annotations et il faudra le configurer afin qu'il charge les classes d'annotation rencontrées
  */
+
+// On se sert de l'autoloader qui expliquera à Doctrine où sont les classes correspondantes aux annotations qu'il 
+// va rencontrer :
+$loader = require  __DIR__ . '/vendor/autoload.php';
+
+// On offre ce loader à Doctrine via son registre d'annotations :
+AnnotationRegistry::registerLoader([$loader, 'loadClass']);
+
 $validator = Validation::createValidatorBuilder()
     ->addYamlMapping('validation.yml')
+    ->enableAnnotationMapping()
     ->getValidator();
 
 // Remplace l'ancien :
