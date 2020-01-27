@@ -10,15 +10,16 @@ use Symfony\Component\Form\Form;
 
 require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . '/RegistrationType.php';
+require __DIR__ . '/RegistrationData.php';
 
 // On imagine qu'on récupère des valeurs à partir d'une base de données ou autre :
-$data = [
-    'firstName' => 'Lior',
-    'lastName' => 'Chamla',
-    'email' => 'lior@gmail.com',
-    'phone' => '0612345678',
-    'position' => 'developer',
-];
+$data = new RegistrationData();
+$data->firstName = 'Lior';
+$data->lastName = 'Chamla';
+$data->email = 'lior@gmail.com';
+$data->phone = '0612345678';
+$data->position = 'developer';
+
 
 /**
  * MISE EN COMMUN DE LA CONFIGURATION DU FACTORY :
@@ -34,9 +35,9 @@ require __DIR__ . '/configuration.php';
  * Voir le fichier index.php pour plus de détails sur ce point
  */
 $builder = $formFactory->createBuilder(RegistrationType::class, null, [
-    'csrf_token_id' => 'registration',
     'csrf_field_name' => 'csrf_token',
-    'csrf_message' => 'Vous n\'avez pas respecté la politique de sécurité CSRF pour ce formulaire !'
+    'csrf_message' => 'Vous n\'avez pas respecté la politique de sécurité CSRF pour ce formulaire !',
+    'data_class' => RegistrationData::class
 ]);
 
 /** 
@@ -88,14 +89,6 @@ foreach ($violations as $violation) {
 
     $errors[$fieldName] = $message;
 }
-// Remplace l'ancien :
-// foreach ($violations as $violation) {
-//     // Par défaut, le propertyPath sera "[firstName]" par exemple, on veut donc supprimer les crochets autour
-//     $fieldName = str_replace(['[', ']'], '', $violation->getPropertyPath());
-//     $message = $violation->getMessage();
-
-//     $errors[$fieldName] = $message;
-// }
 
 // Affichage du formulaire
 include __DIR__ . '/views/form.html.php';

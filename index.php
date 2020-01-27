@@ -34,6 +34,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . '/RegistrationType.php';
+require __DIR__ . '/RegistrationData.php';
 
 /**
  * MISE EN COMMUN DE LA CONFIGURATION DU FACTORY :
@@ -43,80 +44,51 @@ require __DIR__ . '/RegistrationType.php';
  */
 require __DIR__ . '/configuration.php';
 
+// L'objet dans lequel on va stocker à termes les informations du formulaire
+$data = new RegistrationData();
+
 /**
- * RENCONTRE AVEC LE FORMBUILDER :
+ * RENCONTRE AVEC LE FORMBUILDER ET DATA_CLASS:
  * -----------------
- * Les formulaires créés avec le composant symfony/form sont représentés par des objets de la classe Form.
- * Ces objets sont particulièrement complexes à construire : une grande puissance demande une grande complexité !
  * 
- * MAIS PAS DE SOUCIS : On nous donne un outil qui nous permet de construire ces formulaires hyper simplement, dites bonjour au FormBuilder.
+ * Dans ce cours, je vous montre que le FormBuilder peut prendre une option très importante : data_class
+ * Elle désigne au FormBuilder sous quelle forme nous voulons représenter les données du formulaire ! On n'est donc plus cantonné
+ * au simple tableau associatif, on peut tout à fait désormais obtenir un objet d'une classe donnée (y compris une entité) !
  * 
- * Le builder nous permet de configurer un formulaire sans peine, et nous est fourni de différente façon par notre fabrique de 
- * formulaire !
+ * Notez que cette option peut être donnée dans la classe RegistrationType directement afin de factoriser ce code et de ne pas
+ * avoir à préciser systématiquement lors de l'utilisation du RegistrationType qu'on doit utiliser un objet RegistrationData
  * 
- * Enfin, on peut pré-configurer un builder de sorte qu'il se servie d'une classe FormType déjà existante (voir le fichier RegistrationType pour plus d'informations)
- * 
- * CONCERNANT LA PROTECTION CSRF :
- * ------------------
- * 
- * Afin que chaque formulaire sache bien comment gérer cette protection, il faudra donner au FormBuilder un certain nombre
- * d'informations essentielles :
- * 1) L'identifiant du token que l'on souhaite utiliser (cela peut-être n'importe quoi)
- * 2) Le nom du champ du formulaire qui contiendra le token et qui sera validé lors de la soumission
- * 3) Le message d'erreur à afficher dans le cas où le token n'est pas fourni ou qu'il ne correspond pas
- * 
- * Dans le formulaire HTML, il faudra donc avoir un champ qui contienne le token généré avec le même identifiant que celui
- * utilisé par le formulaire
+ * Par ailleurs, vous voyez qu'on peut passer l'objet $data dès la construction du FormBuilder par notre FormFactory ! A partir
+ * de ce moment là, le formulaire prend en charge cet objet et s'en sert pour trouver les données et aussi pour les stocker
+ * lors de la soumission !
  */
-$builder = $formFactory->createBuilder(RegistrationType::class, null, [
+$builder = $formFactory->createBuilder(RegistrationType::class, $data, [
     // Par défaut, l'identifiant du token est le même que le nom du formulaire (ici "registration")
     // On peut bien sur le modifier via l'option "csrf_token_id"
     // 'csrf_token_id' => 'registration',
     'csrf_field_name' => 'csrf_token',
-    'csrf_message' => 'Vous n\'avez pas respecté la politique de sécurité CSRF pour ce formulaire !'
+    'csrf_message' => 'Vous n\'avez pas respecté la politique de sécurité CSRF pour ce formulaire !',
+    // On désigne la classe avec laquelle on souhaite représenter les données
+    'data_class' => RegistrationData::class
 ]);
 
-/** 
- * CONSTRUIRE UN FORMULAIRE AVEC LE FORMBUILDER :
- * ----------------
- * Malgré le fait qu'on ait donné un formulaire prédéfinir au builder lors de sa création, nous pouvons nous en servir
- * pour enrichir ou modifier le formulaire.
- * 
- * On peut donc ajouter des champs ou en supprimer (par rapport à ce qui était configuré dans le RegistrationType) !
- * 
- * Ici par exemple, nous souhaitons ajouter un champ "agreeTerms" qui sera une checkbox en utilisant toujours la méthode 
- * $builder->add(...). On pourrait aussi supprimer des champs avec la méthode $builder->remove()
- */
 $builder->add('agreeTerms', CheckboxType::class, [
     'constraints' => [
         new Assert\NotBlank(['message' => 'Vous n\'avez pas accepté les termes du réglement'])
     ]
 ]);
 
-/**
- * IMPORTANT A SAVOIR :
- * -------------------
- * Ici, nous utilisons un formulaire préconfiguré (RegistrationType) et donc le nom du formulaire devient par défaut "registration".
- * 
- * Ce qui veut dire que les champs s'appellent désormais "registration[firstName]" ou "registration[lastName]".
- */
-
 /** @var Form */
 $form = $builder->getForm();
 
+
 /**
- * TRAITEMENT DE LA REQUETE 
- * ------------------
- * Maintenant que le formulaire est créé, on peut l'utiliser pour examiner la requête HTTP et :
- * 1) Savoir si le formulaire a été soumis
- * 2) Prenre en compte les valeurs soumises et les extraire de la réquête
+ * LIER LES DONNEES AU FORMULAIRE :
+ * ------------
+ * A partir du moment où nous travaillons avec un objet ou un tableau, nous pouvons lier ces données au formulaire
+ * (vous êtes familiers de cela depuis le début dans le fichier edit.php)
  * 
- * Pour ce faire, on utilise la méthode handleRequest() du formulaire. 
- * 
- * Par défaut, le composant symfony/form nous propose un objet de la classe NativeRequestHandler dont 
- * le but est d'examiner les superglobales $_GET et $_POST à la recherche des informations du formulaire.
- * 
- * Plus tard, nous verrons que nous pourrons aussi travailler avec le composant symfony/http-foundation et sa classe Request
+ * On peut donc créer un objet $data qu'on donnera au formulaire et sur lequel il travaillera !
  */
 $form->handleRequest();
 
@@ -127,68 +99,27 @@ $form->handleRequest();
  * Si le formulaire a été soumis, il faut alors extraire les données envoyées, les valider et ensuite faire le traitement voulu
  */
 if ($form->isSubmitted() && $form->isValid()) {
-    // Exemple de validation (remplacé ci-dessous)
-    // $isValid = true;
-    // $errors = [];
-
     /**
-     * EXTRACTION DES CHAMPS SOUMIS :
-     * ----------------
-     * Pour extraire les données, les superglobales $_POST ou $_GET ne nous intéressent plus ! Tout a été géré par le formulaire
-     * lui-même ! Merveilleux.
+     * UTILISATION DE MODELS :
+     * --------------
+     * A partir du moment où on utilise un model (une classe de données, qu'on appelle aussi DTO pour Data Transfer Object)
+     * Le formulaire ne se contente plus de nous donner les informations soumises via un tableau associatif, il va carrément
+     * créer et remplir un objet de la classe qu'on lui désigne en option "data_class".
      * 
-     * Il suffit d'appeler la méthode $form->getData() pour obtenir un tableau qui représente les données soumises via
-     * le formulaire HTML sous la forme d'un tableau associatif.
+     * Ici il s'agit d'une classe RegistrationData
      * 
-     * On peut ensuite faire appel à la fonction extract($data) pour extraire les informations du tableau associatif sous la forme
-     * de variables simples. 
+     * IMPORTANT :
+     * -------------
+     * Notez que $data est objet, et que le formulaire agit donc par défaut PAR REFERENCE SUR L'OBJET $data, si bien que je n'ai
+     * même pas forcément à appeler $form->getData() pour récupérer les données : le formulaire a travaillé directement avec
+     * l'objet $data déjà existant (déclaré et passé au FormBuilder plus haut dans le fichier)
      * 
-     * Nous garderons ici le tableau associatif afin de nous conformer à ce qu'on voit le plus souvent mais il faudra donc modifier
-     * le reste de l'algorithme de validation ainsi que l'affichage du formulaire HTML.
+     * Nous pouvons donc commenter ici la récupération des données ($form->getData()) même si on rappellera qu'on peut toujours
+     * l'utiliser si on le souhaite.
      */
-    $data = $form->getData();
 
-    /**
-     * TOUT CECI EST REMPLACE PAR L'APPEL A LA METHODE $form->isValid() !
-     */
-    // $validationConstraints = new Assert\Collection([ // Nous avons une collection de règles
-    //     'firstName' => [
-    //         new Assert\NotBlank(['message' => 'Le prénom est obligatoire']),
-    //         new Assert\Length(['min' => 3, 'minMessage' => 'Le prénom doit contenir au moins 3 caractères'])
-    //     ],
-    //     'lastName' => [
-    //         new Assert\NotBlank(['message' => 'Le nom de famille est obligatoire']),
-    //         new Assert\Length(['min' => 3, 'minMessage' => 'Le nom de famille doit contenir au moins 3 caractères'])
-    //     ],
-    //     'email' => [
-    //         new Assert\NotBlank(['message' => 'L\'adresse email est obligatoire']),
-    //         new Assert\Email(['message' => 'L\'adresse email n\'est pas au format valide'])
-    //     ],
-    //     'phone' => new Assert\NotBlank(['message' => 'Le numéro de téléphone est obligatoire']),
-    //     'position' => [
-    //         new Assert\NotBlank(['message' => 'Vous devez choisir une position']),
-    //         new Assert\Regex(['pattern' => '/^developer|tester$/', 'message' => 'Le poste choisi n\'existe pas'])
-    //     ]
-    // ]);
-
-    // $validationConstraints->fields['agreeTerms'] = new Assert\Required([
-    //     new Assert\NotBlank(['message' => 'Vous n\'avez pas accepté les termes du réglement'])
-    // ]);
-
-    // $validator = Validation::createValidator();
-
-    // $violations = $validator->validate($data, $validationConstraints);
-    // $isValid = $violations->count() === 0;
-
-    // $errors = [];
-
-    // foreach ($violations as $violation) {
-    //     // Par défaut, le propertyPath sera "[firstName]" par exemple, on veut donc supprimer les crochets autour
-    //     $fieldName = str_replace(['[', ']'], '', $violation->getPropertyPath());
-    //     $message = $violation->getMessage();
-
-    //     $errors[$fieldName] = $message;
-    // }
+    /** @var RegistrationData */
+    // $data = $form->getData();
 
     // Traitement (enregistrement en base de données ou envoi de mail, peu importe)
     // TODO ...
@@ -206,14 +137,6 @@ foreach ($violations as $violation) {
 
     $errors[$fieldName] = $message;
 }
-// Remplace l'ancien :
-// foreach ($violations as $violation) {
-//     // Par défaut, le propertyPath sera "[firstName]" par exemple, on veut donc supprimer les crochets autour
-//     $fieldName = str_replace(['[', ']'], '', $violation->getPropertyPath());
-//     $message = $violation->getMessage();
-
-//     $errors[$fieldName] = $message;
-// }
 
 // Affichage du formulaire
 include __DIR__ . '/views/form.html.php';

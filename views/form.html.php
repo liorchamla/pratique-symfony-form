@@ -76,18 +76,18 @@
         <?php endif ?>
 
         <!-- AFFICHAGE DES CHAMPS AVEC CLASSE SPECIALE SI LE CHAMP EST PRESENT DANS LES ERREURS ET REPRISE DE LA VALEUR SOUMISE SI ELLE EXISTE -->
-        <input type="text" name="registration[firstName]" id="firstName" placeholder="Prénom" <?php if (isset($errors['firstName'])) : ?> class="is-invalid" <?php endif ?> value="<?= $data['firstName'] ?? '' ?>">
+        <input type="text" name="registration[firstName]" id="firstName" placeholder="Prénom" <?php if (isset($errors['firstName'])) : ?> class="is-invalid" <?php endif ?> value="<?= $data->firstName ?? '' ?>">
 
-        <input type="text" name="registration[lastName]" id="lastName" placeholder="Nom de famille" <?php if (isset($errors['lastName'])) : ?> class="is-invalid" <?php endif ?> value="<?= $data['lastName'] ?? '' ?>">
+        <input type="text" name="registration[lastName]" id="lastName" placeholder="Nom de famille" <?php if (isset($errors['lastName'])) : ?> class="is-invalid" <?php endif ?> value="<?= $data->lastName ?? '' ?>">
 
-        <input type="email" name="registration[email]" id="email" placeholder="Adresse email" <?php if (isset($errors['email'])) : ?> class="is-invalid" <?php endif ?> value="<?= $data['email'] ?? '' ?>">
+        <input type="email" name="registration[email]" id="email" placeholder="Adresse email" <?php if (isset($errors['email'])) : ?> class="is-invalid" <?php endif ?> value="<?= $data->email ?? '' ?>">
 
-        <input type="text" name="registration[phone]" id="phone" placeholder="Numéro de téléphone" <?php if (isset($errors['phone'])) : ?> class="is-invalid" <?php endif ?> value="<?= $data['phone'] ?? '' ?>">
+        <input type="text" name="registration[phone]" id="phone" placeholder="Numéro de téléphone" <?php if (isset($errors['phone'])) : ?> class="is-invalid" <?php endif ?> value="<?= $data->phone ?? '' ?>">
 
         <select name="registration[position]" id="position" <?php if (isset($errors['position'])) : ?> class="is-invalid" <?php endif ?>>
             <option value="">Choisissez un poste</option>
-            <option value="developer" <?php if ($data['position'] && $data['position'] === 'developer') : ?> selected <?php endif ?>>Développeur</option>
-            <option value="tester" <?php if ($data['position'] && $data['position'] === 'tester') : ?> selected <?php endif ?>>Testeur</option>
+            <option value="developer" <?php if ($data->position && $data->position === 'developer') : ?> selected <?php endif ?>>Développeur</option>
+            <option value="tester" <?php if ($data->position && $data->position === 'tester') : ?> selected <?php endif ?>>Testeur</option>
         </select>
 
         <?php if ($builder->has('agreeTerms')) : ?>
