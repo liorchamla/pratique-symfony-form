@@ -19,13 +19,11 @@
  */
 
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
-use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\Extension\Core\Type\EmailType;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Form;
 use Symfony\Component\Form\Forms;
 
 require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/RegistrationType.php';
 
 /**
  * CREATION D'UNE FABRIQUE DE FORMULAIRE :
@@ -47,48 +45,49 @@ $formFactory = Forms::createFormFactory();
  * 
  * Le builder nous permet de configurer un formulaire sans peine, et nous est fourni de différente façon par notre fabrique de 
  * formulaire !
+ * 
+ * Enfin, on peut pré-configurer un builder de sorte qu'il se servie d'une classe FormType déjà existante (voir le fichier RegistrationType pour plus d'informations)
  */
-$builder = $formFactory->createBuilder();
+$builder = $formFactory->createBuilder(RegistrationType::class);
 
 /** 
  * CONSTRUIRE UN FORMULAIRE AVEC LE FORMBUILDER :
  * ----------------
- * Un formulaire, ce n'est qu'un ensemble de champs que l'on veut afficher, traiter, valider. 
- * Le builder va donc nous fournir une API (un ensemble de méthodes) pour configurer et créer le formulaire de nos rêves.
+ * Malgré le fait qu'on ait donné un formulaire prédéfinir au builder lors de sa création, nous pouvons nous en servir
+ * pour enrichir ou modifier le formulaire.
  * 
- * On peut évidemment décrire la structure et les types de champs que l'on souhaite traiter, mais aussi préciser l'action, la méthode et bien d'autres choses.
+ * On peut donc ajouter des champs ou en supprimer (par rapport à ce qui était configuré dans le RegistrationType) !
  * 
- * Chaque champ est représenté par un Type de champ (TextType, EmailType, TextareaType, CheckboxType, ChoiceType, ...). 
- * Le composant fourni des dizaines de types prédéfinis mais on peut en créer autant qu'on le veut.
- * 
+ * Ici par exemple, nous souhaitons ajouter un champ "agreeTerms" qui sera une checkbox en utilisant toujours la méthode 
+ * $builder->add(...). On pourrait aussi supprimer des champs avec la méthode $builder->remove()
+ */
+$builder->add('agreeTerms', CheckboxType::class);
+
+/**
  * IMPORTANT A SAVOIR :
- * --------------------
- * Par défaut, le builder va construire UN FORMULAIRE NOMME, il va donc donner un "nom" à notre formulaire ("form" par défaut)
- * Ce qui veut dire que ce qu'il s'attend à traiter ce ne sera pas par exemple un champ "firstName", mais un champ "form[firstName]"
+ * -------------------
+ * Ici, nous utilisons un formulaire préconfiguré (RegistrationType) et donc le nom du formulaire devient par défaut "registration".
  * 
- * Evidemment, on peut choisir le nom que l'on donne au fomulaire en appelant la méthode $formFactory->createNamedBuilder('nom_que_je_veux') au lieu de $formFactory->createBuilder() qui, je le rappelle, donnera le nom "form" par défaut.
- * 
- * On peut aussi choisir de ne pas utiliser de nom particulier (et donc de bien traiter un champ "firstName" plutôt que "form[firstName]) en utilisant la méthode $formFactory->createNamedBuilder('') avec une chaine vide :)
- * 
- * Pour ce cours, nous nous conformerons à ce que vous verrez le plus souvent et garderons le nom par défaut : "form"
- * Ce qui veut dire que nous devons mettre à jour les attributs "name" de nos champs HTML en "form[firstName]", "form[lastName]" etc.
+ * Ce qui veut dire que les champs s'appellent désormais "registration[firstName]" ou "registration[lastName]".
  */
 
 /** @var Form */
-$form = $formFactory->createBuilder()
-    ->add('firstName', TextType::class)
-    ->add('lastName', TextType::class)
-    ->add('email', EmailType::class)
-    ->add('phone', TextType::class)
-    ->add('position', ChoiceType::class, [
-        'placeholder' => 'Choisissez un poste',
-        'choices' => [
-            'Développeur' => 'developer',
-            'Testeur' => 'tester'
-        ]
-    ])
-    ->add('agreeTerms', CheckboxType::class)
-    ->getForm();
+$form = $builder->getForm();
+// Remplace l'ancien :
+// $form = $builder
+//     ->add('firstName', TextType::class)
+//     ->add('lastName', TextType::class)
+//     ->add('email', EmailType::class)
+//     ->add('phone', TextType::class)
+//     ->add('position', ChoiceType::class, [
+//         'placeholder' => 'Choisissez un poste',
+//         'choices' => [
+//             'Développeur' => 'developer',
+//             'Testeur' => 'tester'
+//         ]
+//     ])
+//     ->add('agreeTerms', CheckboxType::class)
+//     ->getForm();
 
 /**
  * TRAITEMENT DE LA REQUETE 
@@ -105,6 +104,7 @@ $form = $formFactory->createBuilder()
  * Plus tard, nous verrons que nous pourrons aussi travailler avec le composant symfony/http-foundation et sa classe Request
  */
 $form->handleRequest();
+
 
 /**
  * DEBUT DE L'ALGORITHME DE TRAITEMENT :

@@ -14,6 +14,7 @@ use Symfony\Component\Form\Form;
 use Symfony\Component\Form\Forms;
 
 require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/RegistrationType.php';
 
 // On imagine qu'on récupère des valeurs à partir d'une base de données ou autre :
 $data = [
@@ -43,7 +44,7 @@ $formFactory = Forms::createFormFactory();
  * -----------------
  * Voir le fichier index.php pour plus de détails sur ce point
  */
-$builder = $formFactory->createBuilder();
+$builder = $formFactory->createBuilder(RegistrationType::class);
 
 /** 
  * CONSTRUIRE UN FORMULAIRE AVEC LE FORMBUILDER :
@@ -52,20 +53,7 @@ $builder = $formFactory->createBuilder();
  */
 
 /** @var Form */
-$form = $formFactory->createBuilder()
-    ->add('firstName', TextType::class)
-    ->add('lastName', TextType::class)
-    ->add('email', EmailType::class)
-    ->add('phone', TextType::class)
-    ->add('position', ChoiceType::class, [
-        'placeholder' => 'Choisissez un poste',
-        'choices' => [
-            'Développeur' => 'developer',
-            'Testeur' => 'tester'
-        ]
-    ])
-    ->add('agreeTerms', CheckboxType::class)
-    ->getForm();
+$form = $builder->getForm();
 
 /**
  * PRE-REMPLIR LE FORMULAIRE 
@@ -158,10 +146,6 @@ if ($form->isSubmitted()) {
     if ($data['position'] && !in_array($data['position'], ['developer', 'tester'])) {
         $isValid = false;
         $errors['position'] = 'La position que vous avez choisi n\'est pas valide !';
-    }
-    if (!$data['agreeTerms']) {
-        $isValid = false;
-        $errors['agreeTerms'] = 'Vous n\'avez pas accepté les termes du réglement !';
     }
 
     // Si tout va bien, on traite et on affiche le résultat
