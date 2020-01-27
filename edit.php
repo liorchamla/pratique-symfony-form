@@ -6,74 +6,160 @@
  * Dans ce fichier, on aborde un formulaire pré-rempli par des valeurs particulières pour voir ce qui change par rapport à un formulaire vierge
  */
 
-// On imagine qu'on récupère des valeurs à partir d'une base de données ou autre :
-$firstName = 'Lior';
-$lastName = 'Chamla';
-$email = 'lior@gmail.com';
-$phone = '0612345678';
-$position = 'developer';
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Form;
+use Symfony\Component\Form\Forms;
 
-// Si il y a quelque chose dans le POST c'est qu'on a bien essayer de soumettre quelque chose !
-$isSubmitted = !empty($_POST);
+require __DIR__ . '/vendor/autoload.php';
+
+// On imagine qu'on récupère des valeurs à partir d'une base de données ou autre :
+$data = [
+    'firstName' => 'Lior',
+    'lastName' => 'Chamla',
+    'email' => 'lior@gmail.com',
+    'phone' => '0612345678',
+    'position' => 'developer',
+];
+// Remplace l'ancien :
+// $firstName = 'Lior';
+// $lastName = 'Chamla';
+// $email = 'lior@gmail.com';
+// $phone = '0612345678';
+// $position = 'developer';
+
+/**
+ * CREATION D'UNE FABRIQUE DE FORMULAIRE :
+ * ------------
+ * Voir le fichier index.php pour plus de détails sur ce point
+ */
+
+$formFactory = Forms::createFormFactory();
+
+/**
+ * RENCONTRE AVEC LE FORMBUILDER :
+ * -----------------
+ * Voir le fichier index.php pour plus de détails sur ce point
+ */
+$builder = $formFactory->createBuilder();
+
+/** 
+ * CONSTRUIRE UN FORMULAIRE AVEC LE FORMBUILDER :
+ * ----------------
+ * Voir le fichier index.php pour plus de détails sur ce point
+ */
+
+/** @var Form */
+$form = $formFactory->createBuilder()
+    ->add('firstName', TextType::class)
+    ->add('lastName', TextType::class)
+    ->add('email', EmailType::class)
+    ->add('phone', TextType::class)
+    ->add('position', ChoiceType::class, [
+        'placeholder' => 'Choisissez un poste',
+        'choices' => [
+            'Développeur' => 'developer',
+            'Testeur' => 'tester'
+        ]
+    ])
+    ->add('agreeTerms', CheckboxType::class)
+    ->getForm();
+
+/**
+ * PRE-REMPLIR LE FORMULAIRE 
+ * -----------------
+ * On peut donner des données existantes au formulaire afin qu'il les prenne en compte !
+ * 
+ * C'est très simple : il suffit d'appeler la méthode $form->setData($data) en partant du principe que $data
+ * est un tableau associatif dont les clés correspondent aux champs configurés sur le formulaire.
+ */
+$form->setData($data);
+
+/**
+ * TRAITEMENT DE LA REQUETE 
+ * ------------------
+ * Voir le fichier index.php pour plus de détails sur ce point
+ */
+$form->handleRequest();
 
 /**
  * DEBUT DE L'ALGORITHME DE TRAITEMENT :
  * -----------------
  * Si le formulaire a été soumis, il faut alors extraire les données envoyées, les valider et ensuite faire le traitement voulu
  */
-if ($isSubmitted) {
-    var_dump($_POST);
+if ($form->isSubmitted()) {
+    // Remplace l'ancien :
+    // $isSubmitted = !empty($_POST);
+    // if ($isSubmitted) {
 
     // Exemple de validation
     $isValid = true;
     $errors = [];
 
-    // Extraction des champs afin de les examiner puis de les utiliser
-    $firstName = $_POST['firstName'] ? trim($_POST['firstName']) : false;
-    $lastName = $_POST['lastName'] ? trim($_POST['lastName']) : false;
-    $email = $_POST['email'] ? trim($_POST['email']) : false;
-    $phone = $_POST['phone'] ? trim($_POST['phone']) : false;
-    $position = $_POST['position'] ?? false;
-    $agreeTerms = $_POST['agreeTerms'] ?? false;
+    /**
+     * EXTRACTION DES CHAMPS SOUMIS :
+     * ----------------
+     * Pour extraire les données, les superglobales $_POST ou $_GET ne nous intéressent plus ! Tout a été géré par le formulaire
+     * lui-même ! Merveilleux.
+     * 
+     * Il suffit d'appeler la méthode $form->getData() pour obtenir un tableau qui représente les données soumises via
+     * le formulaire HTML sous la forme d'un tableau associatif.
+     * 
+     * On peut ensuite faire appel à la fonction extract($data) pour extraire les informations du tableau associatif sous la forme
+     * de variables simples. 
+     * 
+     * Nous garderons ici le tableau associatif afin de nous conformer à ce qu'on voit le plus souvent mais il faudra donc modifier
+     * le reste de l'algorithme de validation ainsi que l'affichage du formulaire HTML.
+     */
+    $data = $form->getData();
+    // Remplace l'ancien :
+    // $firstName = $_POST['firstName'] ? trim($_POST['firstName']) : false;
+    // $lastName = $_POST['lastName'] ? trim($_POST['lastName']) : false;
+    // $email = $_POST['email'] ? trim($_POST['email']) : false;
+    // $phone = $_POST['phone'] ? trim($_POST['phone']) : false;
+    // $position = $_POST['position'] ?? false;
+    // $agreeTerms = $_POST['agreeTerms'] ?? false;
 
     // Début de la validation
-    if (!$firstName) {
+    if (!$data['firstName']) {
         $isValid = false;
         $errors['firstName'] = 'Le prénom est obligatoire';
     }
-    if ($firstName && mb_strlen($firstName) < 3) {
+    if ($data['firstName'] && mb_strlen($data['firstName']) < 3) {
         $isValid = false;
         $errors['firstName'] = 'Le prénom doit avoir au moins 3 caractères';
     }
-    if (!$lastName) {
+    if (!$data['lastName']) {
         $isValid = false;
         $errors['lastName'] = 'Le nom de famille est obligatoire';
     }
-    if ($lastName && mb_strlen($lastName) < 3) {
+    if ($data['lastName'] && mb_strlen($data['lastName']) < 3) {
         $isValid = false;
         $errors['lastName'] = 'Le nom de famille doit avoir au moins 3 caractères';
     }
-    if (!$email) {
+    if (!$data['email']) {
         $isValid = false;
         $errors['email'] = 'L\'email est obligatoire !';
     }
-    if ($email && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    if ($data['email'] && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
         $isValid = false;
         $errors['email'] = 'L\'email n\'est pas au format valide !';
     }
-    if (!$phone) {
+    if (!$data['phone']) {
         $isValid = false;
         $errors['phone'] = 'Le téléphone est obligatoire !';
     }
-    if (!$position) {
+    if (!$data['position']) {
         $isValid = false;
         $errors['position'] = 'La position souhaitée est obligatoire !';
     }
-    if ($position && !in_array($position, ['developer', 'tester'])) {
+    if ($data['position'] && !in_array($data['position'], ['developer', 'tester'])) {
         $isValid = false;
         $errors['position'] = 'La position que vous avez choisi n\'est pas valide !';
     }
-    if (!$agreeTerms) {
+    if (!$data['agreeTerms']) {
         $isValid = false;
         $errors['agreeTerms'] = 'Vous n\'avez pas accepté les termes du réglement !';
     }
