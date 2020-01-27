@@ -75,7 +75,7 @@ $builder = $formFactory->createBuilder();
  */
 
 /** @var Form */
-$form = $formFactory->createBuilder()
+$form = $builder
     ->add('firstName', TextType::class)
     ->add('lastName', TextType::class)
     ->add('email', EmailType::class)
