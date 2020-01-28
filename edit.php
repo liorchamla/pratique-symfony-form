@@ -14,8 +14,8 @@ require __DIR__ . '/RegistrationData.php';
 
 // On imagine qu'on récupère des valeurs à partir d'une base de données ou autre :
 $data = new RegistrationData();
-$data->firstName = 'Lior';
-$data->lastName = 'Chamla';
+$data->firstName = 'LIOR';
+$data->lastName = 'CHAMLA';
 $data->email = 'lior@gmail.com';
 $data->phone = '0612345678';
 $data->position = 'developer';
@@ -65,6 +65,14 @@ $form->setData($data);
  * Voir le fichier index.php pour plus de détails sur ce point
  */
 $form->handleRequest();
+
+/**
+ * CONSTATATION SUR LA TRANSFORMATION DE DONNEES :
+ * ------------
+ * Ce var_dump n'est là que pour vous faire voir que désormais, si vous écrivez "Lior" pour le prénom ou "Chamla" pour le nom
+ * dans le formulaire HTML, ce que le formulaire vous donnera au final ce sera bien "LIOR" ou "CHAMLA" !
+ */
+var_dump($form->getData());
 
 /**
  * DEBUT DE L'ALGORITHME DE TRAITEMENT :

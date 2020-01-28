@@ -1,6 +1,7 @@
 <?php
 
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\CallbackTransformer;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
@@ -36,6 +37,54 @@ class RegistrationType extends AbstractType
                 ],
                 'label' => 'Poste souhaité'
             ]);
+
+        /**
+         * MISE EN PLACE DU DATATRANSFORMER 
+         * ------------------------
+         * Un DataTransformer s'attache à un champ en particulier et est représenté par 2 fonctions :
+         * 1) Une fonction qui va transformer la données PHP en la donné qu'on veut afficher
+         * 2) Une fonction va transformer la donnée soumise (du texte) en la donnée PHP que l'on souhaite
+         * 
+         * Dans notre cas, nous imaginons que nous souhaitons que le nom et le prénom soit 
+         * 1) Transformés en style classique lors de l'affichage du formulaire (exemple : "Lior" et "Chamla")
+         * 2) Transformés en majuscules lors de la récupération des données du formulaire (exemple : "LIOR" et "CHAMLA")
+         * 
+         * On va donc créer deux DataTransformer attachés aux champs "firstName" et "lastName"
+         */
+        $builder->get('firstName')->addModelTransformer(new CallbackTransformer(
+            // La première fonction représente la transformation VERS l'affichage (donc de MAJUSCULES à Normal)
+            function ($chaineOriginal) {
+                // On reçoit la chaine en MAJUSCULES (on imagine "LIOR" ou "CHAMLA")
+                // et on veut la transformer en chaine classique ("Lior" ou "Chamla")
+                return ucwords(strtolower($chaineOriginal));
+            },
+            // La deuxième fonction représente la transformation DEPUIS l'affichage (donc de Normal à MAJUSCULES)
+            function ($chaineClassique) {
+                // On reçoit la chaine classique (on imagine donc "Lior" ou "Chamla")
+                // et on veut la transformer en chaine  majuscules
+                return strtoupper($chaineClassique);
+            }
+        ));
+
+        /**
+         * On fait la même chose pour le lastName : 
+         * C'est redondant, mais on verra dans la section suivante comment ne pas tomber dans le piège en créant une classe 
+         * spécifique
+         */
+        $builder->get('lastName')->addModelTransformer(new CallbackTransformer(
+            // La première fonction représente la transformation VERS l'affichage (donc de MAJUSCULES à Normal)
+            function ($chaineOriginal) {
+                // On reçoit la chaine en MAJUSCULES (on imagine "LIOR" ou "CHAMLA")
+                // et on veut la transformer en chaine classique ("Lior" ou "Chamla")
+                return ucwords(strtolower($chaineOriginal));
+            },
+            // La deuxième fonction représente la transformation DEPUIS l'affichage (donc de Normal à MAJUSCULES)
+            function ($chaineClassique) {
+                // On reçoit la chaine classique (on imagine donc "Lior" ou "Chamla")
+                // et on veut la transformer en chaine  majuscules
+                return strtoupper($chaineClassique);
+            }
+        ));
     }
 
     public function configureOptions(OptionsResolver $resolver)

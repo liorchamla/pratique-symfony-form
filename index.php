@@ -1,33 +1,41 @@
 <?php
 
 /**
- * QUATRIEME PARTIE : DISPOSER D'UN RENDU SIMPLIFIE GRÂCE A TWIG
+ * CINQUIEME PARTIE : AUTOMATISER DES TRAITEMENTS SUR LES DONNEES AVEC LES DATA TRANSFORMERS
  * -----------------------
- * Pour l'instant, nous écrivons nous-même le HTML qui servira à afficher le formulaire. 
+ * Nous arrivons pratiquement à la fin de notre découverte du composant symfony/form même si beaucoup de points n'ont pas
+ * été abordés, nous vous laissons découvrir la documentation très riche et pratiquer afin de toujours en savoir plus !
  * 
- * La conséquence c'est que le rendu HTML et la configuration du formulaire sont désynchronisés ! Si on ajoute un champ
- * à la configuration du formulaire, il n'apparaitra pas automatiquement dans le HTML. Pareil si on supprime un champ.
+ * Découvrons alors maintenant ce que sont les DataTransformers et comment ils peuvent nous aider à gérer une transformation
+ * entre une donnée passée au formulaire et la donnée qui doit s'afficher et inversement.
  * 
- * Plus encore, la construction du formulaire via le FormBuilder nous permet d'enrichir les champs avec beaucoup d'options
- * qui concernent l'affichage, et pour l'instant, nous ne tirons pas partie de cette puissance.
+ * Si un formulaire permet de transformer des données écrites dans une page HTML en données PHP (objet ou tableau) et inversement
+ * alors un DataTransformer peut être vu comme une brique qui se place entre les deux univers afin de traiter et appliquer des
+ * transformations sur les données.
  * 
- * TWIG A LA RESCOUSSE :
- * -----------------
- * On va donc faire appel à Twig qui va nous permettre de profiter à 100% de toutes les options d'affichage du composant
- * symfony/form.
+ * Le DataTransformer le plus connu est celui qui est contenu dans les champs DateTimeType qui permettent en partant d'un objet
+ * DateTime d'afficher une date au format texte, et d'une date au format texte d'obtenir un objet DateTime.
  * 
- * Par défaut, la librairie Twig ne dispose pas du tout de fonctionnalités en rapport avec le composant symfony/form MAIS
- * Symfony a créé un BRIDGE (un pont) : une librairie qui va ajouter des extensions à Twig de façon à ce qu'il sache
- * travailler avec les formulaires du composant Form.
+ * Si bien que dans le monde PHP, notre données est bien un objet DateTime pratique à utiliser, mais au sein du HTML, cela devient
+ * un input classique.
  * 
- * Après l'avoir installé (composer require symfony/twig-bridge) il va falloir configurer Twig et l'utiliser dans nos 
- * templates.
+ * TRANSFORMATION SUR LE PRENOM ET LE NOM
+ * ------------------
+ * Pour cet exemple un peu stupide, imaginons que l'on souhaite systématiquement afficher dans le formulaire HTML le nom et le 
+ * prénom au format classique (comme par exemple "Lior" ou "Magali") mais que dans le monde PHP, on souhaite systématiquement 
+ * que ces données soient en majuscules ("LIOR" ou "MAGALI").
+ * 
+ * On pourrait gérer ça à la main lors de la création ou de la soumission du formulaire, mais il faudrait alors répéter le même
+ * traitement partout où on utilise le même formulaire.
+ * 
+ * C'est pourquoi il vaudrait mieux utiliser les DataTransformer qui, eux, sont directement liés au formulaire et seront donc
+ * réutilisés à chaque fois que l'on souhaite utiliser ce formulaire !
  * 
  * Pour voir les changements principaux, concentrez vous sur :
- * - configuration.php => Mise en place du moteur Twig
- * - view/form.html.twig => On modifie l'affichage du formulaire pour faire du Twig
- * - index.php et edit.php => On n'inclue plus de fichiers PHP pour l'affichage mais on fait du rendu Twig
- * - RegistrationType.php => On met en place des options d'affichage comme les labels et les placeholders
+ * - RegistrationType.php => On met en place le DataTransformer sous la forme d'une simple fonction (on verra ensuite comment
+ * le faire sous forme de classe)
+ * - index.php => Uniquement des var_dump qui vous permettent de constater le fonctionnement
+ * - edit.php => On passe le prénom et le nom en MAJUSCULES et vous constaterez qu'ils s'affichent bien en minuscules dans le form
  */
 
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -69,6 +77,14 @@ $form = $builder->getForm();
 // Traitement de la requête
 $form->handleRequest();
 
+
+/**
+ * CONSTATATION SUR LA TRANSFORMATION DE DONNEES :
+ * ------------
+ * Ce var_dump n'est là que pour vous faire voir que désormais, si vous écrivez "Lior" pour le prénom ou "Chamla" pour le nom
+ * dans le formulaire HTML, ce que le formulaire vous donnera au final ce sera bien "LIOR" ou "CHAMLA" !
+ */
+var_dump($form->getData());
 
 /**
  * DEBUT DE L'ALGORITHME DE TRAITEMENT :

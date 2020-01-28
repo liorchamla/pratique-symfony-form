@@ -69,7 +69,7 @@
 	</head>
 
 	<body>
-		{{ form_start(form) }}
+		{{ form_start(form, {'attr': {'novalidate': 'novalidate'}}) }}
 		<h1>Inscription au service</h1>
 
 		{{ form_widget(form) }}
