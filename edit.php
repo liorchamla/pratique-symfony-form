@@ -1,16 +1,10 @@
 <?php
 
-/**
- * BIENVENUE DANS CE COURS SUR LES FORMULAIRES !
- * -----------------------
- * Dans ce fichier, on aborde un formulaire pré-rempli par des valeurs particulières pour voir ce qui change par rapport à un formulaire vierge
- */
-
+use App\Form\Model\RegistrationData;
+use App\Form\RegistrationType;
 use Symfony\Component\Form\Form;
 
-require __DIR__ . '/vendor/autoload.php';
-require __DIR__ . '/RegistrationType.php';
-require __DIR__ . '/RegistrationData.php';
+require __DIR__ . '/config/configuration.php';
 
 // On imagine qu'on récupère des valeurs à partir d'une base de données ou autre :
 $data = new RegistrationData();
@@ -23,65 +17,18 @@ $data->position = 'developer';
 // Important : si l'objet possède un $id, alors on n'aura pas le champ "agreeTerms"
 $data->id = 123;
 
-
-/**
- * MISE EN COMMUN DE LA CONFIGURATION DU FACTORY :
- * ----------------
- * La fabrique de formulaire (FormFactory) pourrait être utilisé dans d'autres fichiers, on peut donc le mettre
- * en place à part.
- */
-require __DIR__ . '/configuration.php';
-
-/**
- * RENCONTRE AVEC LE FORMBUILDER :
- * -----------------
- * Voir le fichier index.php pour plus de détails sur ce point
- */
-$builder = $formFactory->createBuilder(RegistrationType::class, null, [
+// Création du formulaire
+$builder = $formFactory->createBuilder(RegistrationType::class, $data, [
+    'data_class' => RegistrationData::class,
     'csrf_field_name' => 'csrf_token',
     'csrf_message' => 'Vous n\'avez pas respecté la politique de sécurité CSRF pour ce formulaire !',
-    'data_class' => RegistrationData::class
 ]);
-
-/** 
- * CONSTRUIRE UN FORMULAIRE AVEC LE FORMBUILDER :
- * ----------------
- * Voir le fichier index.php pour plus de détails sur ce point
- */
 
 /** @var Form */
 $form = $builder->getForm();
 
-/**
- * PRE-REMPLIR LE FORMULAIRE 
- * -----------------
- * On peut donner des données existantes au formulaire afin qu'il les prenne en compte !
- * 
- * C'est très simple : il suffit d'appeler la méthode $form->setData($data) en partant du principe que $data
- * est un tableau associatif dont les clés correspondent aux champs configurés sur le formulaire.
- */
-$form->setData($data);
-
-/**
- * TRAITEMENT DE LA REQUETE 
- * ------------------
- * Voir le fichier index.php pour plus de détails sur ce point
- */
 $form->handleRequest();
 
-/**
- * CONSTATATION SUR LA TRANSFORMATION DE DONNEES :
- * ------------
- * Ce var_dump n'est là que pour vous faire voir que désormais, si vous écrivez "Lior" pour le prénom ou "Chamla" pour le nom
- * dans le formulaire HTML, ce que le formulaire vous donnera au final ce sera bien "LIOR" ou "CHAMLA" !
- */
-var_dump($form->getData());
-
-/**
- * DEBUT DE L'ALGORITHME DE TRAITEMENT :
- * -----------------
- * Si le formulaire a été soumis, il faut alors extraire les données envoyées, les valider et ensuite faire le traitement voulu
- */
 if ($form->isSubmitted() && $form->isValid()) {
     // Si tout va bien, on traite et on affiche le résultat
     // Traitement (enregistrement en base de données ou envoi de mail, peu importe)
