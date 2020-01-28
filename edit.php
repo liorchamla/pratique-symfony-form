@@ -81,14 +81,6 @@ if ($form->isSubmitted() && $form->isValid()) {
     return;
 }
 
-$errors = [];
-$violations = $form->getErrors(true);
-foreach ($violations as $violation) {
-    $fieldName = str_replace(['[', ']'], '', (string) $violation->getOrigin()->getPropertyPath());
-    $message = $violation->getMessage();
-
-    $errors[$fieldName] = $message;
-}
-
-// Affichage du formulaire
-include __DIR__ . '/views/form.html.php';
+$twig->display('form.html.twig', [
+    'form' => $form->createView()
+]);

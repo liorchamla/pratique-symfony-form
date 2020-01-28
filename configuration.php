@@ -1,69 +1,25 @@
 <?php
 
 use Doctrine\Common\Annotations\AnnotationRegistry;
+use Symfony\Bridge\Twig\AppVariable;
+use Symfony\Bridge\Twig\Extension\FormExtension;
+use Symfony\Bridge\Twig\Extension\TranslationExtension;
+use Symfony\Bridge\Twig\Form\TwigRendererEngine;
 use Symfony\Component\Form\Extension\Csrf\CsrfExtension;
 use Symfony\Component\Form\Extension\Validator\ValidatorExtension;
+use Symfony\Component\Form\FormRenderer;
 use Symfony\Component\Form\Forms;
 use Symfony\Component\Security\Csrf\CsrfTokenManager;
 use Symfony\Component\Security\Csrf\TokenGenerator\UriSafeTokenGenerator;
 use Symfony\Component\Security\Csrf\TokenStorage\NativeSessionTokenStorage;
+use Symfony\Component\Translation\Translator;
 use Symfony\Component\Validator\Validation;
+use Twig\Environment;
+use Twig\Loader\FilesystemLoader;
+use Twig\RuntimeLoader\FactoryRuntimeLoader;
 
 require_once __DIR__ . '/vendor/autoload.php';
 
-/**
- * CREATION D'UNE FABRIQUE DE FORMULAIRE :
- * ------------
- * Pour créer et gérer des forlulaires avec le composant symfony/form, il faut créer une fabrique qui nous permettra de les construire.
- * 
- * Les fabriques de formulaire sont des objets qui implémentent l'interface FormFactoryInterface
- * 
- * PERSONNALISER LA FABRIQUE DE FORMULAIRES :
- * ------------
- * Si l'on souhaite que nos futurs formulaires bénéficient d'une fonciguration particulière, nous devons configurer la fabrique
- * de formulaires.
- * 
- * Par exemple, si nous souhaitons que nos formulaires bénéficient d'une validation, nous devons indiquer à la FormFactory
- * qu'elle possède une extension permettant de valider (évidemment).
- * 
- * LES EXTENSIONS DU COMPOSANT FORM :
- * ------------
- * En effet, le composant symfony/form est extensible ! Il ne possède pas en lui même nombre de choses qu'on aimerait pourtant
- * lui déléguer : validations, traductions, sécurité, etc.
- * 
- * Les extensions reposent sur des classes qui implémentent l'interface FormExtensionInterface, ce qui veut dire que vous pouvez
- * tout à fait vous même créer une extension au système de formulaires de Symfony ;)
- */
-
-/**
- * CREATION D'UN VALIDATEUR :
- * ----------
- * Le composant Validator vient avec deux apports principaux :
- * - Des contraintes de validation qui représente des règles et sont des classes 
- * - Un validateur qui va analyser une ou plusieurs données et voir si elles sont conformes aux règles prévues
- * 
- * Pour créer un validateur, on peut se servir de la méthode statique Validation::createValidator().
- * 
- * Il existe aussi une méthode Validation::createValidatorBuilder() qui nous permet de configurer le validateur, et c'est
- * notamment grâce à ça qu'on pourra configurer un validateur pour se servir d'un fichier de configuration YAML ou encore
- * d'annotations qui se trouvent sur une classe donnée, etc.
- * 
- * LECTURE DE FICHIERS DE CONFIGURATION YAML :
- * ----------
- * Nous pouvons donc utiliser la méthode Validation::createValidatorBuilder() pour configurer notre propre validateur avec
- * des détails tels que par exemple ... le fait de devoir lire des fichiers de configuration YAML !
- * 
- * LECTURE DES ANNOTATIONS DANS LES CLASSES :
- * -----------
- * Une autre façon d'expliquer les contraintes qui pèsent sur les propriétés d'une classe en plus du fichier YAML, ce sont les
- * annotations. Pour pouvoir les utiliser, il faudra utiliser Validation::createValidatorBuilder() afin de le configurer et
- * qu'il soit au courant qu'on veut utiliser les annotations !
- * 
- * ATTENTION :
- * ---------
- * Utiliser les annotations demande à ce qu'on créé un chargeur (loader) d'annotations. Cet objet nous est procuré par la librarie
- * doctrine/annotations et il faudra le configurer afin qu'il charge les classes d'annotation rencontrées
- */
 
 // On se sert de l'autoloader qui expliquera à Doctrine où sont les classes correspondantes aux annotations qu'il 
 // va rencontrer :
@@ -77,43 +33,61 @@ $validator = Validation::createValidatorBuilder()
     ->enableAnnotationMapping()
     ->getValidator();
 
-// Remplace l'ancien :
-// $validator = Validation::createValidator();
-
-/**
- * MISE EN PLACE DE LA SECURITE PAR CSRF :
- * ----------------
- * Dans la plupart des cas, vous ne souhaitez pas qu'une formulaire puisse être soumis par l'extérieur de votre propre site.
- * 
- * Or pour l'instant, rien n'empêche quelqu'un d'envoyer une simple requête HTTP en POST vers le fichier index.php ou edit.php
- * afin de soumettre des données. Ce qui ouvre une brêche de sécurité assez inquiétante (sauf bien sur si c'est ce que vous 
- * aviez prévu dès le départ, comme dans le cas d'une API ouverte ou ce genre de choses).
- * 
- * Il est donc possible d'utiliser le composant symfony/security-csrf (composer require symfony/security-csrf) afin d'en doter
- * nos formulaires.
- * 
- * Une fois le composant installé, on peut désormais mettre en place cette politique de sécurisation sur notre FormFactory
- * afin que nos formulaires bénéficient désormais de cette protection !
- * 
- * LES OBJETS DE BASE (ET LA SESSION) :
- * ------------------
- * La politique de protection CSRF consiste à stoquer un jeton dans la session lors de la génération du formulaire
- * puis à vérifier que ce jeton est bien présent et valide lors de la réception du formulaire.
- * 
- * Pour ce faire, on a besoin :
- * 1) D'une brique qui se charge de générer des chaines aléatoire (le UriSafeTokenGenerator). C'est
- * un objet qui implémente l'interface TokenGeneratorInterface (donc vous pourriez créer le votre ;))
- * 2) D'une brique qui se charge de manipuler la session : si vous n'utilisez pas HttpFoundation, ce sera le NativeSessionTokenStorage
- * mais si vous utilisez HttpFoundation, vous pourriez utiliser le SessionTokenStorage, dans tous les cas, un objet qui 
- * implémente la TokenStorageInterface (là encore, vous pourriez même créer votre propre implémentation)
- * 3) D'une brique qui se charge de tout mettre en relation et de gérer le tout : le CsrfTokenManager, objet qui implémente
- * l'interface TokenManagerInterface, ce qui fait que vous pourriez là aussi créer le votre :)
- */
+// Mise en place de la protection CSRF
 session_start();
 
 $csrfGenrator = new UriSafeTokenGenerator();
 $csrfStorage = new NativeSessionTokenStorage();
 $csrfManager = new CsrfTokenManager($csrfGenrator, $csrfStorage);
+
+/**
+ * CREATION DU MOTEUR TWIG ET CONFIGURATION DE L'EXTENSION POUR LES FORMULAIRES
+ * --------------
+ * Cette partie est assez complexe mais elle consiste en gros à créer le moteur Twig en lui expliquant où se trouvent
+ * les fichiers Twig qu'on va vouloir afficher (nos vues, mais aussi les thèmes de formulaires du bridge).
+ * 
+ * Ensuite, il s'agira d'enrichir Twig avec les fonctions offertes par le symfony/twig-bridge
+ * 
+ * ATTENTION :
+ * -----------
+ * L'utilisation du theme par défaut (form_div_layout.html.twig) nécessite aussi d'installer le composant 
+ * symfony/translation (composer require symfony/translation) car il utilise le filtre "trans"
+ */
+
+// 1) Localiser les templates de l'application elle-même :
+$viewsDirectory = __DIR__ . '/views';
+
+// 2) Localiser le template de formulaire qu'on veut utiliser en intérogeant la classe AppVariable
+$reflexion = new ReflectionClass(AppVariable::class);
+$bridgeDirectory = dirname($reflexion->getFileName());
+$templatesDirectory = $bridgeDirectory . '/Resources/views/Form';
+
+// 3) Création du moteur Twig en spécifiant les dossiers de templates 
+$twig = new Environment(new FilesystemLoader([
+    $viewsDirectory, // Le dossier où se trouvent nos fichiers twig, y compris le custom theme
+    $templatesDirectory
+]));
+
+// 4) Définir le thème de formulaire par défaut (il en existe plusieurs, dont certains pour bootstrap 3 et 4 ou encore Foundation)
+$formTheme = 'form_div_layout.html.twig';
+$customFormTheme = 'custom_theme.html.twig';
+
+// 5) On peut désormais désormais enrichir Twig avec les fonctions fournies par le bridge (donc spécialement pour le
+// composant symfony/form) en n'oubliant pas d'inclure le gestionnaire de la protection CSRF afin que Twig puisse
+// gérer le rendu du token dans le formulaire :
+$formEngine = new TwigRendererEngine([$formTheme, $customFormTheme], $twig);
+$twig->addRuntimeLoader(new FactoryRuntimeLoader([
+    FormRenderer::class => function () use ($formEngine, $csrfManager) {
+        return new FormRenderer($formEngine, $csrfManager);
+    }
+]));
+
+$twig->addExtension(new FormExtension());
+
+// 6) Attention, pour utiliser la plupart des thèmes de formulaires du Twig Bridge, on a besoin du composant Translation
+// (composer require symfony/translation)
+$translator = new Translator('fr_FR');
+$twig->addExtension(new TranslationExtension($translator));
 
 /**
  * CONFIGURATION DE LA FORMFACTORY

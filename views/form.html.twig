@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta http-equiv="X-UA-Compatible" content="ie=edge">
+		<title>Inscription au service</title>
+		<style>
+			* {
+				box-sizing: border-box;
+			}
+
+			form {
+				width: 30%;
+				margin: 0 auto;
+			}
+
+			input[type="text"],
+			input[type="email"],
+			select {
+				display: block;
+				padding: 5px;
+				border-radius: 5px;
+				border: 1px solid #eee;
+				margin: 10px 0;
+				width: 100%;
+			}
+
+			input.is-invalid,
+			select.is-invalid {
+				border-color: red;
+			}
+
+			label.is-invalid {
+				color: red;
+			}
+
+			span.error {
+				color: white;
+				background-color: red;
+				padding: 5px;
+				border-radius: 5px;
+				margin-bottom: 20px;
+				display: block;
+			}
+
+			label {
+				display: block;
+				margin: 10px 0;
+			}
+
+			div.errors {
+				display: block;
+				color: white;
+				border-radius: 5px;
+				padding: 10px;
+				background-color: red;
+			}
+
+			button {
+				color: white;
+				background-color: green;
+				border: 1px solid lightgreen;
+				border-radius: 5px;
+				padding: 10px 20px;
+			}
+		</style>
+	</head>
+
+	<body>
+		{{ form_start(form) }}
+		<h1>Inscription au service</h1>
+
+		{{ form_widget(form) }}
+
+		<button type="submit">Je m'inscris</button>
+
+		{{ form_end(form) }}
+	</body>
+
+</html>
