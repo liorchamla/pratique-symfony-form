@@ -31,11 +31,17 @@
  * C'est pourquoi il vaudrait mieux utiliser les DataTransformer qui, eux, sont directement liés au formulaire et seront donc
  * réutilisés à chaque fois que l'on souhaite utiliser ce formulaire !
  * 
+ * UNE CLASSE DATATRANSFORMER :
+ * --------------
+ * Jusqu'ici, nos DataTransformers sont représentés sous la forme de deux fonctions directement dans le fichier RegistrationType
+ * et nous avons vu que nous devions les répéter pour le firstName et le lastName.
+ * 
+ * On peut refactoriser encore en créant une classe qui reprenne nos deux fonctions de transformation (aller / retour) afin
+ * d'alléger le code de la classe RegistrationType * 
+ * 
  * Pour voir les changements principaux, concentrez vous sur :
- * - RegistrationType.php => On met en place le DataTransformer sous la forme d'une simple fonction (on verra ensuite comment
- * le faire sous forme de classe)
- * - index.php => Uniquement des var_dump qui vous permettent de constater le fonctionnement
- * - edit.php => On passe le prénom et le nom en MAJUSCULES et vous constaterez qu'ils s'affichent bien en minuscules dans le form
+ * - NameDataTransformer.php => La classe de transformation de noms (le DataTransformer donc)
+ * - RegistrationType.php => On remplace les fonctions callback par une référence simple à la classe NameDataTransformer
  */
 
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
