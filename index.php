@@ -37,11 +37,21 @@
  * et nous avons vu que nous devions les répéter pour le firstName et le lastName.
  * 
  * On peut refactoriser encore en créant une classe qui reprenne nos deux fonctions de transformation (aller / retour) afin
- * d'alléger le code de la classe RegistrationType * 
+ * d'alléger le code de la classe RegistrationType
+ * 
+ * REUTILISABILITE ULTIME EN CREANT NOTRE PROPRE TYPE DE CHAMP :
+ * -------------
+ * Le DataTransformer marche bien, mais il me faut l'ajouter à tous les formulaires où je souhaite qu'il soit utilisé.
+ * Comment pourrait-on faire pour que quelque soit le formulaire que créé, je puisse immédiatement bénéficier de ces
+ * traitements sans avoir à me soucier d'ajouter le DataTransformer sur les champs nécessaires ?
+ * 
+ * FACILE : Je peux créer un type de champs personnalisé (Custom Field Type) qui se comporterait en tout point comme TextType,
+ * TextareaType, EmailType et tous les autres ! Et ce type de champ, appelons le NameType, porterait en lui le DataTransformer !
  * 
  * Pour voir les changements principaux, concentrez vous sur :
- * - NameDataTransformer.php => La classe de transformation de noms (le DataTransformer donc)
- * - RegistrationType.php => On remplace les fonctions callback par une référence simple à la classe NameDataTransformer
+ * - NameType.php => On créé un type de champ custom pour représenter les noms (prénom et nom)
+ * - RegistrationType.php => On utilise le NameType pour le firstName et le lastName au lieu du TextType et du DataTransformer
+ * - BONUS : PositionType.php => On créé un type de champ custom pour représenter la liste déroulante des postes possibles
  */
 
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;

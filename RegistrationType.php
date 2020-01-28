@@ -8,17 +8,19 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 require __DIR__ . '/NameDataTransformer.php';
+require __DIR__ . '/NameType.php';
+require __DIR__ . '/PositionType.php';
 
 class RegistrationType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         $builder
-            ->add('firstName', TextType::class, [
+            ->add('firstName', NameType::class, [
                 'label' => 'Prénom',
                 'attr' => ['placeholder' => 'Prénom']
             ])
-            ->add('lastName', TextType::class, [
+            ->add('lastName', NameType::class, [
                 'label' => 'Nom de famille',
                 'attr' => ['placeholder' => 'Nom de famille']
             ])
@@ -30,17 +32,10 @@ class RegistrationType extends AbstractType
                 'label' => 'Téléphone',
                 'attr' => ['placeholder' => 'Numéro de téléphone']
             ])
-            ->add('position', ChoiceType::class, [
-                'placeholder' => 'Choisissez un poste',
-                'choices' => [
-                    'Développeur' => 'developer',
-                    'Testeur' => 'tester'
-                ],
-                'label' => 'Poste souhaité'
-            ]);
+            ->add('position', PositionType::class);
 
         /**
-         * MISE EN PLACE DU DATATRANSFORMER 
+         * MISE EN PLACE DU DATATRANSFORMER (PLUS NECESSAIRE AVEC LE NOUVEAU NAMETYPE)
          * ------------------------
          * Un DataTransformer s'attache à un champ en particulier et est représenté par 2 fonctions :
          * 1) Une fonction qui va transformer la données PHP en la donné qu'on veut afficher
@@ -52,10 +47,10 @@ class RegistrationType extends AbstractType
          * 
          * On va donc créer deux DataTransformer attachés aux champs "firstName" et "lastName"
          */
-        $nameDataTransformer = new NameDataTransformer();
+        // $nameDataTransformer = new NameDataTransformer();
 
-        $builder->get('firstName')->addModelTransformer($nameDataTransformer);
-        $builder->get('lastName')->addModelTransformer($nameDataTransformer);
+        // $builder->get('firstName')->addModelTransformer($nameDataTransformer);
+        // $builder->get('lastName')->addModelTransformer($nameDataTransformer);
     }
 
     public function configureOptions(OptionsResolver $resolver)
