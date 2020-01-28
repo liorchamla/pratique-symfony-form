@@ -4,6 +4,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 class RegistrationData
 {
+    public $id;
+
     /**
      * @Assert\NotBlank(message="Le prénom est obligatoire !")
      * @Assert\Length(min=3, minMessage="Le prénom doit faire au moins 3 caractères")

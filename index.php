@@ -1,57 +1,50 @@
 <?php
 
 /**
- * CINQUIEME PARTIE : AUTOMATISER DES TRAITEMENTS SUR LES DONNEES AVEC LES DATA TRANSFORMERS
+ * DERNIERE PARTIE : AUTOMATISER DES TRAITEMENTS VIA LES EVENEMENTS DE FORMULAIRE
  * -----------------------
- * Nous arrivons pratiquement à la fin de notre découverte du composant symfony/form même si beaucoup de points n'ont pas
- * été abordés, nous vous laissons découvrir la documentation très riche et pratiquer afin de toujours en savoir plus !
+ * Nous y sommes, la dernière partie de ce long cheminement au cours : une partie très importante.
  * 
- * Découvrons alors maintenant ce que sont les DataTransformers et comment ils peuvent nous aider à gérer une transformation
- * entre une donnée passée au formulaire et la donnée qui doit s'afficher et inversement.
+ * Le composant symfony/form permet au formulaire d'émettre des événements lors de son utilisation, des événements que l'on peut
+ * intercepter au moment où ils sont émis pour travailler sur le formulaire. Les évenements utilisables sont :
  * 
- * Si un formulaire permet de transformer des données écrites dans une page HTML en données PHP (objet ou tableau) et inversement
- * alors un DataTransformer peut être vu comme une brique qui se place entre les deux univers afin de traiter et appliquer des
- * transformations sur les données.
+ * 1) Les événements de construction :
+ * - PRE_SET_DATA : émis après l'appel de la fonction setData() AVANT que les données ne soient adoptées par le formulaire
+ * - POST_SET_DATA : émis après l'appel de la fonction setData() APRES que les données soient adoptées par le formulaire
+ * 2) Les événements de soumission :
+ * - PRE_SUBMIT : émis lors de la soumission du formuilaire (fonction submit()) AVANT de transformer les données de la requête
+ * - SUBMIT : émis lors de la soumission du formulaire APRES avoir transformé les données de la requête 
+ * - POST_SUBMIT : émis lors de la soumission du formulaire APRES avoir créé l'objet qui contient les données finales
  * 
- * Le DataTransformer le plus connu est celui qui est contenu dans les champs DateTimeType qui permettent en partant d'un objet
- * DateTime d'afficher une date au format texte, et d'une date au format texte d'obtenir un objet DateTime.
- * 
- * Si bien que dans le monde PHP, notre données est bien un objet DateTime pratique à utiliser, mais au sein du HTML, cela devient
- * un input classique.
- * 
- * TRANSFORMATION SUR LE PRENOM ET LE NOM
- * ------------------
- * Pour cet exemple un peu stupide, imaginons que l'on souhaite systématiquement afficher dans le formulaire HTML le nom et le 
- * prénom au format classique (comme par exemple "Lior" ou "Magali") mais que dans le monde PHP, on souhaite systématiquement 
- * que ces données soient en majuscules ("LIOR" ou "MAGALI").
- * 
- * On pourrait gérer ça à la main lors de la création ou de la soumission du formulaire, mais il faudrait alors répéter le même
- * traitement partout où on utilise le même formulaire.
- * 
- * C'est pourquoi il vaudrait mieux utiliser les DataTransformer qui, eux, sont directement liés au formulaire et seront donc
- * réutilisés à chaque fois que l'on souhaite utiliser ce formulaire !
- * 
- * UNE CLASSE DATATRANSFORMER :
+ * NOTRE EXEMPLE :
  * --------------
- * Jusqu'ici, nos DataTransformers sont représentés sous la forme de deux fonctions directement dans le fichier RegistrationType
- * et nous avons vu que nous devions les répéter pour le firstName et le lastName.
+ * Jusqu'à maintenant, la différence principale entre index.php et edit.php c'est que dans l'index.php on part d'un formulaire 
+ * vierge alors que dans l'edit.php on part sur un formulaire pré-rempli par des données. 
  * 
- * On peut refactoriser encore en créant une classe qui reprenne nos deux fonctions de transformation (aller / retour) afin
- * d'alléger le code de la classe RegistrationType
+ * Dans les deux cas nous passons un objet RegistrationData à notre formulaire, pour l'index, c'est un objet vide, pour l'edit 
+ * c'est un objet rempli de données.
  * 
- * REUTILISABILITE ULTIME EN CREANT NOTRE PROPRE TYPE DE CHAMP :
- * -------------
- * Le DataTransformer marche bien, mais il me faut l'ajouter à tous les formulaires où je souhaite qu'il soit utilisé.
- * Comment pourrait-on faire pour que quelque soit le formulaire que créé, je puisse immédiatement bénéficier de ces
- * traitements sans avoir à me soucier d'ajouter le DataTransformer sur les champs nécessaires ?
+ * Dans le cas de l'index, on veut donc une case "agreeTerms" dans le formulaire que nous ne souhaitons pas avoir dans l'edit.
  * 
- * FACILE : Je peux créer un type de champs personnalisé (Custom Field Type) qui se comporterait en tout point comme TextType,
- * TextareaType, EmailType et tous les autres ! Et ce type de champ, appelons le NameType, porterait en lui le DataTransformer !
+ * On peut déporter ce traitement (l'ajout d'un champ "agreeTerms") directement dans le formulaire :
+ * - Si les données passées au formulaire sont pré-remplies, on ne touche à rien
+ * - Si les données sont vierges, c'est qu'on est sur une INSCRIPTION et donc on veut la case à cocher
+ * 
+ * UTILISONS L'EVENEMENT PRE_SET_DATA :
+ * ------------
+ * On peut donc se brancher à l'événement PRE_SET_DATA du formulaire pour décider, en fonction des données passées au formulaire
+ * lors de sa création, si l'on veut ajouter ou pas le champ "agreeTerms"
+ * 
+ * COMMENT FAIRE LA DIFFERENCE ENTRE FORMULAIRE VIERGE OU PRE REMPLI ?
+ * ----------------
+ * Dans les deux cas nous passons au formulaire un objet de la classe RegistrationData. Ajoutons y un champ public $id afin de
+ * différencier un objet vierge ($id vide) ou pré-rempli ($id défini).
  * 
  * Pour voir les changements principaux, concentrez vous sur :
- * - NameType.php => On créé un type de champ custom pour représenter les noms (prénom et nom)
- * - RegistrationType.php => On utilise le NameType pour le firstName et le lastName au lieu du TextType et du DataTransformer
- * - BONUS : PositionType.php => On créé un type de champ custom pour représenter la liste déroulante des postes possibles
+ * - RegistrationData.php => Ajout du champ public $id
+ * - index.php => On retire l'ajout "manuel" du champ "agreeTerms"
+ * - edit.php => On donne à l'objet $data un id
+ * - RegistrationType.php => On met en place un listener sur l'événement PRE_SET_DATA
  */
 
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -77,15 +70,21 @@ $builder = $formFactory->createBuilder(RegistrationType::class, $data, [
     'data_class' => RegistrationData::class
 ]);
 
-$builder->add('agreeTerms', CheckboxType::class, [
-    'label' => 'J\'accèpte les termes du réglement',
-    'constraints' => [
-        // C'est la seule validation qu'on ajoute à la main car elle n'est pas utile lors du edit.php
-        // On l'ajoute donc ici lors de l'ajout du champ, le reste des validations est décrit dans le fichier
-        // validation.yml ou dans nos annotations
-        new Assert\NotBlank(['message' => 'Vous n\'avez pas accepté les termes du réglement'])
-    ]
-]);
+/**
+ * CETTE PARTIE N'EST PLUS NECESSAIRE :
+ * -----------
+ * En effet, grâce à la gestion des événements au sein même du formulaire, cette partie est gérée directement dans 
+ * RegistrationType.php
+ */
+// $builder->add('agreeTerms', CheckboxType::class, [
+//     'label' => 'J\'accèpte les termes du réglement',
+//     'constraints' => [
+//         // C'est la seule validation qu'on ajoute à la main car elle n'est pas utile lors du edit.php
+//         // On l'ajoute donc ici lors de l'ajout du champ, le reste des validations est décrit dans le fichier
+//         // validation.yml ou dans nos annotations
+//         new Assert\NotBlank(['message' => 'Vous n\'avez pas accepté les termes du réglement'])
+//     ]
+// ]);
 
 /** @var Form */
 $form = $builder->getForm();

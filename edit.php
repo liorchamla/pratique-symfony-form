@@ -20,6 +20,9 @@ $data->email = 'lior@gmail.com';
 $data->phone = '0612345678';
 $data->position = 'developer';
 
+// Important : si l'objet possède un $id, alors on n'aura pas le champ "agreeTerms"
+$data->id = 123;
+
 
 /**
  * MISE EN COMMUN DE LA CONFIGURATION DU FACTORY :

@@ -1,11 +1,15 @@
 <?php
 
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\FormEvent;
+use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+
+use Symfony\Component\Validator\Constraints as Assert;
 
 require __DIR__ . '/NameDataTransformer.php';
 require __DIR__ . '/NameType.php';
@@ -35,22 +39,38 @@ class RegistrationType extends AbstractType
             ->add('position', PositionType::class);
 
         /**
-         * MISE EN PLACE DU DATATRANSFORMER (PLUS NECESSAIRE AVEC LE NOUVEAU NAMETYPE)
+         * MISE EN PLACE D'UN LISTENER SUR L'EVENEMENT PRE_SET_DATA
          * ------------------------
-         * Un DataTransformer s'attache à un champ en particulier et est représenté par 2 fonctions :
-         * 1) Une fonction qui va transformer la données PHP en la donné qu'on veut afficher
-         * 2) Une fonction va transformer la donnée soumise (du texte) en la donnée PHP que l'on souhaite
+         * L'événement PRE_SET_DATA est appelé après l'appel de la fonction setData() mais avant que les données
+         * ne soient adoptées par le formulaire. On peut donc travailler en analysant les données passées et 
+         * éventuellement modifier notre formulaire afin de répondre à nos besoins.
          * 
-         * Dans notre cas, nous imaginons que nous souhaitons que le nom et le prénom soit 
-         * 1) Transformés en style classique lors de l'affichage du formulaire (exemple : "Lior" et "Chamla")
-         * 2) Transformés en majuscules lors de la récupération des données du formulaire (exemple : "LIOR" et "CHAMLA")
-         * 
-         * On va donc créer deux DataTransformer attachés aux champs "firstName" et "lastName"
+         * Ici le but est de voir si on nous a passé un objet RegistrationData qui soit vierge ou pré-rempli. Si il est vierge
+         * on veut ajouter le champs "agreeTerms" au formulaire, sinon, on ne l'ajoute pas !
          */
-        // $nameDataTransformer = new NameDataTransformer();
+        $builder->addEventListener(FormEvents::PRE_SET_DATA, function (FormEvent $event) {
+            // On peut récupérer les données passées au formulaire
+            $data = $event->getData();
 
-        // $builder->get('firstName')->addModelTransformer($nameDataTransformer);
-        // $builder->get('lastName')->addModelTransformer($nameDataTransformer);
+            // Si on ne nous a rien passé, on s'arrête
+            if (!$data) {
+                return;
+            }
+
+            // On peut récupérer le formulaire tel qu'il est à ce moment là :
+            $form = $event->getForm();
+
+            // Si l'objet qu'on nous a passé n'a pas d'id défini
+            // Alors on veut ajouter le champ "agreeTerms"
+            if (!$data->id) {
+                $form->add('agreeTerms', CheckboxType::class, [
+                    'label' => 'J\'accèpte les termes du réglement',
+                    'constraints' => [
+                        new Assert\NotBlank(['message' => 'Vous n\'avez pas accepté les termes du réglement'])
+                    ]
+                ]);
+            }
+        });
     }
 
     public function configureOptions(OptionsResolver $resolver)
