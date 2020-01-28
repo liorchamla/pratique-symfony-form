@@ -4,4 +4,4 @@ Le but de ce dépôt est de vous montrer comment le composant Form de Symfony pe
 
 # Comment ça marche ?
 
-Pour naviguer étapes par étapes dans le cours, suivez les branches du dépôt dans l'ordre :)
+Pour naviguer étapes par étapes dans le cours, suivez les branches du dépôt dans l'ordre en ouvrant systématiquement le fichier index.php !
